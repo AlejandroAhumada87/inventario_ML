@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Buscador</h1>
+<input type="text" id="q" onkeyup="search()" placeholder="Buscar equipo, marca..." style="width:100%; padding:15px; background:#000; border:1px solid var(--orange); color:white; margin-bottom:20px;">
+<table id="t">
+    <thead>
+        <tr>
+            <th>Equipo</th>
+            <th>Marca</th>
+            <th>Estado</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for e in equipos %}
+        <tr class="item-fila">
+            <td><b>{{ e.nombre }}</b></td>
+            <td>{{ e.marca }}</td>
+            <td>
+                {% set disp = e.cantidad_total - e.cantidad_en_uso %}
+                {{ disp }} disponibles
+            </td>
+            <td><a href="/equipo/{{ e.id }}" style="color:var(--orange);">Ver Ficha</a></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<script>
+function search() {
+    let q = document.getElementById('q').value.toLowerCase();
+    document.querySelectorAll('.item-fila').forEach(f => {
+        f.style.display = f.innerText.toLowerCase().includes(q) ? "" : "none";
+    });
+}
+</script>
+{% endblock %}

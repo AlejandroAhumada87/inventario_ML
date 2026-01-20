@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BODEGA | Tech Inventory</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --orange: #ff6600; --dark-bg: #0a0a0a; --card-bg: #141414; --border: #2a2a2a; --text-main: #e0e0e0; --text-dim: #888888; --green: #00ff88; --red: #ff4444; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--dark-bg); color: var(--text-main); margin: 0; }
+        
+        nav { background: #000; padding: 0.5rem 2rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); }
+        .nav-left { display: flex; align-items: center; gap:20px; }
+        .nav-links a { color: var(--text-dim); text-decoration: none; font-weight: 600; font-size: 0.8rem; padding: 8px 12px; transition: 0.3s; letter-spacing: 1px; }
+        .nav-links a:hover { color: var(--orange); }
+        
+        .container { padding: 30px 2rem; max-width: 1400px; margin: 0 auto; }
+        .flash-messages { margin-bottom: 20px; }
+        .flash { padding: 10px; border-radius: 4px; margin-bottom: 10px; font-size: 0.8rem; font-weight: bold; border-left: 5px solid; }
+        .flash.success { background: #002200; color: var(--green); border-color: var(--green); }
+        .flash.warning { background: #221100; color: var(--orange); border-color: var(--orange); }
+        .flash.error { background: #220000; color: var(--red); border-color: var(--red); }
+
+        h1 { font-family: 'JetBrains Mono', monospace; color: var(--orange); font-size: 1.5rem; text-transform: uppercase; }
+        table { width: 100%; border-collapse: collapse; background: var(--card-bg); border: 1px solid var(--border); }
+        th { background: #1a1a1a; color: var(--text-dim); padding: 12px; text-align: left; font-size: 0.7rem; text-transform: uppercase; border-bottom: 2px solid var(--border); }
+        td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
+        .btn-main { background: var(--orange); color: #000; border: none; padding: 8px 16px; border-radius: 4px; font-weight: 700; cursor: pointer; font-size: 0.7rem; text-transform: uppercase; }
+        .btn-outline { background: transparent; color: var(--orange); border: 1px solid var(--orange); padding: 8px 16px; border-radius: 4px; text-decoration: none; font-weight: 700; font-size: 0.7rem; }
+        .form-box { background: #111; padding: 20px; border: 1px solid var(--border); }
+        input, textarea, select { background: #000; border: 1px solid var(--border); color: white; padding: 8px; border-radius: 4px; }
+        .badge { padding: 3px 6px; border-radius: 3px; font-size: 0.65rem; font-family: 'JetBrains Mono'; background: #222; color: var(--text-dim); }
+        
+        .logo-header { height: 150px; display: block; filter: grayscale(100%) brightness(150%); }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="nav-left">
+            <div style="font-weight: 800; color: var(--orange); font-family: 'JetBrains Mono';">MEDIA LIGHTING</div>
+            <div class="nav-links">
+                <a href="/">INVENTARIO</a>
+                <a href="/buscar">BUSCADOR</a>
+                <a href="/historial">HISTORIAL</a>
+            </div>
+        </div>
+        <div class="nav-right">
+            <img src="{{ url_for('static', filename='logo.jpg') }}" alt="ML" class="logo-header">
+        </div>
+    </nav>
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <div class="flash-messages">
+              {% for category, message in messages %}
+                <div class="flash {{ category }}">{{ message }}</div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html>

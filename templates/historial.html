@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>HISTORIAL DE MOVIMIENTOS</h1>
+
+<input type="text" id="filtroHistorial" onkeyup="filtrarH()" placeholder="Filtrar por equipo, responsable o tipo..." style="width:100%; padding:12px; margin-bottom:20px; border:1px solid var(--border);">
+
+<table id="tablaHistorial">
+    <thead>
+        <tr>
+            <th>FECHA</th>
+            <th>EQUIPO</th>
+            <th>CANTIDAD</th>
+            <th>TIPO</th>
+            <th>RESPONSABLE</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for h in registros %}
+        <tr class="fila-h">
+            <td style="color:var(--text-dim)">{{ h.fecha.strftime('%d/%m/%Y %H:%M') }}</td>
+            <td><b>{{ h.equipo.nombre }}</b></td>
+            <td>x{{ h.cantidad }}</td>
+            <td><span class="badge" style="color: {{ '#ff6600' if h.tipo == 'SALIDA' else '#00ff88' }}">{{ h.tipo }}</span></td>
+            <td>@{{ h.usuario }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<script>
+function filtrarH() {
+    let q = document.getElementById('filtroHistorial').value.toLowerCase();
+    document.querySelectorAll('.fila-h').forEach(f => {
+        f.style.display = f.innerText.toLowerCase().includes(q) ? "" : "none";
+    });
+}
+</script>
+{% endblock %}

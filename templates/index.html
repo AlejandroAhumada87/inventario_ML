@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center;">
+    <h1>INVENTARIO GENERAL</h1>
+    <a href="/exportar" class="btn-outline" style="color:var(--green); border-color:var(--green);">↓ EXPORTAR EXCEL</a>
+</div>
+
+<div class="form-box" style="margin-bottom: 40px; border-left: 4px solid var(--orange);">
+    <h3 style="margin:0 0 15px 0; color:var(--orange); font-size: 0.8rem; letter-spacing:1px;">+ REGISTRAR NUEVO ACTIVO</h3>
+    <form action="/add" method="POST" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">
+        <input type="text" name="nom" placeholder="Nombre" required>
+        <input type="text" name="mar" placeholder="Marca">
+        <select name="cat" required>
+            <option value="" disabled selected>Categoría...</option>
+            {% for cat in categorias %}
+                <option value="{{ cat }}">{{ cat }}</option>
+            {% endfor %}
+        </select>
+        <input type="number" name="can" placeholder="Stock Inicial" required min="1">
+        <button type="submit" class="btn-main">AÑADIR A BODEGA</button>
+    </form>
+</div>
+
+<table>
+    <thead>
+        <tr>
+            <th>EQUIPO / MARCA</th>
+            <th>CATEGORÍA</th>
+            <th>TOTAL</th>
+            <th>EN USO</th>
+            <th>DISPONIBLE</th>
+            <th>MOVIMIENTO POR LOTE</th>
+            <th style="text-align: right;">ACCIONES</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for e in equipos %}
+        {% set disp = e.cantidad_total - e.cantidad_en_uso %}
+        <tr style="{{ 'opacity:0.6; background:#1a0000;' if disp == 0 }}">
+            <td>
+                <span style="display:block; font-weight:700;">{{ e.nombre }}</span>
+                <small style="color:var(--text-dim)">{{ e.marca }}</small>
+            </td>
+            <td><span class="badge">{{ e.categoria }}</span></td>
+            <td style="font-family: 'JetBrains Mono';">{{ e.cantidad_total }}</td>
+            <td style="color:var(--orange); font-family: 'JetBrains Mono'; font-weight:bold;">{{ e.cantidad_en_uso }}</td>
+            <td style="font-family: 'JetBrains Mono'; font-weight: bold; color: {{ '#00ff88' if disp > 0 else '#ff4444' }}">
+                [{{ disp }}]
+            </td>
+            <td>
+                <form action="/movimiento/{{ e.id }}/prestar" method="POST" style="display:flex; gap:5px;">
+                    <input type="number" name="cant_lote" value="1" min="1" max="{{ disp }}" style="width:45px;" {{ 'disabled' if disp == 0 }}>
+                    <input type="text" name="usuario" placeholder="¿Quién?" style="width:80px; font-size:0.75rem;" required>
+                    <button type="submit" class="btn-main" {{ 'disabled' if disp == 0 }} style="{{ 'filter:grayscale(1); cursor:not-allowed;' if disp == 0 }}">SALIDA</button>
+                    <button type="submit" formaction="/movimiento/{{ e.id }}/devolver" class="btn-main" style="background:var(--green);" {{ 'disabled' if e.cantidad_en_uso == 0 }}>RETORNO</button>
+                </form>
+            </td>
+            <td style="text-align: right;">
+                <a href="/equipo/{{ e.id }}" class="btn-outline">FICHA</a>
+                <a href="/delete/{{ e.id }}" onclick="return confirm('¿Eliminar equipo?')" style="color:var(--red); margin-left:15px; text-decoration:none; font-size:1.2rem;">&times;</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
