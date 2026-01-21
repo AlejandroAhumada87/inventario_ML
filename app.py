@@ -16,7 +16,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = os.path.join(basedir, 'manuales')
 app.config['ALLOWED_EXTENSIONS'] = {'pdf', 'doc', 'docx', 'txt', 'png', 'jpg', 'jpeg'}
 
-CATEGORIAS = ["Luminarias", "Grip", "Insumos", "Equipamiento Electrico"]
+CATEGORIAS = sorted(["Luminarias", "Grip", "Insumos", "Equipamiento Electrico", "Accesorios"])
 
 if not os.path.exists(app.config['UPLOAD_FOLDER']):
     os.makedirs(app.config['UPLOAD_FOLDER'])
@@ -63,7 +63,7 @@ def detalle_equipo(id):
 @app.route('/equipo/<int:id>/update', methods=['POST'])
 def update_equipo(id):
     e = Equipo.query.get_or_404(id)
-    e.observaciones = request.form.get('observaciones')
+    e.observaciones = request.form.get('observaciones', '')
     if 'manual' in request.files:
         file = request.files['manual']
         if file and allowed_file(file.filename):
@@ -80,10 +80,14 @@ def download_manual(filename):
 
 @app.route('/movimiento/<int:id>/<tipo>', methods=['POST'])
 def movimiento(id, tipo):
-    e = Equipo.query.get(id)
-    nombre_usuario = request.form.get('usuario') or "Sin Nombre"
+    e = Equipo.query.get_or_404(id)
+    nombre_usuario = request.form.get('usuario', 'Sin Nombre').strip() or "Sin Nombre"
+    
     try:
         cant_lote = int(request.form.get('cant_lote') or 1)
+        if cant_lote < 1:
+            flash("La cantidad debe ser al menos 1.", "warning")
+            return redirect(request.referrer or url_for('index'))
     except ValueError:
         cant_lote = 1
     
@@ -92,16 +96,17 @@ def movimiento(id, tipo):
         if cant_lote <= disponible: 
             e.cantidad_en_uso += cant_lote
             db.session.add(Historial(equipo_id=id, tipo='SALIDA', usuario=nombre_usuario, cantidad=cant_lote))
-            flash(f"Salida registrada: {cant_lote} x {e.nombre}", "warning")
+            flash(f"Salida registrada: {cant_lote} x {e.nombre} para {nombre_usuario}", "warning")
         else:
-            flash("Error: Stock insuficiente para esta salida.", "error")
+            flash(f"Error: Solo quedan {disponible} disponibles.", "error")
     elif tipo == 'devolver':
         if cant_lote <= e.cantidad_en_uso: 
             e.cantidad_en_uso -= cant_lote
             db.session.add(Historial(equipo_id=id, tipo='RETORNO', usuario=nombre_usuario, cantidad=cant_lote))
-            flash(f"Retorno registrado: {cant_lote} x {e.nombre}", "success")
+            flash(f"Retorno registrado: {cant_lote} x {e.nombre} por {nombre_usuario}", "success")
         else:
-            flash("Error: No puedes retornar más de lo que está en uso.", "error")
+            flash(f"Error: Solo hay {e.cantidad_en_uso} en uso actualmente.", "error")
+    
     db.session.commit()
     return redirect(request.referrer or url_for('index'))
 
@@ -163,8 +168,9 @@ def mostrar_historial():
 
 @app.route('/buscar')
 def buscar():
-    equipos = Equipo.query.all()
-    return render_template('buscar.html', equipos=equipos)
+    equipos = Equipo.query.order_by(Equipo.nombre.asc()).all()
+    return render_template('buscar.html', equipos=equipos, categorias=CATEGORIAS)
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5001)
+    app.run(debug=True, port=5000
+    )

@@ -1,36 +1,119 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Buscador</h1>
-<input type="text" id="q" onkeyup="search()" placeholder="Buscar equipo, marca..." style="width:100%; padding:15px; background:#000; border:1px solid var(--orange); color:white; margin-bottom:20px;">
-<table id="t">
-    <thead>
-        <tr>
-            <th>Equipo</th>
-            <th>Marca</th>
-            <th>Estado</th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for e in equipos %}
-        <tr class="item-fila">
-            <td><b>{{ e.nombre }}</b></td>
-            <td>{{ e.marca }}</td>
-            <td>
-                {% set disp = e.cantidad_total - e.cantidad_en_uso %}
-                {{ disp }} disponibles
-            </td>
-            <td><a href="/equipo/{{ e.id }}" style="color:var(--orange);">Ver Ficha</a></td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+<h1>BUSCADOR DE EQUIPOS</h1>
+
+<!-- Botones de Filtro por Categoría -->
+<div class="filter-tabs"
+    style="margin-bottom: 30px; display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; width: 100%;">
+    <button onclick="filterByCategory('all')" class="filter-btn active-filter" id="btn-all">TODOS</button>
+    {% for cat in categorias %}
+    <button onclick="filterByCategory('{{ cat }}')" class="filter-btn" id="btn-{{ cat|replace(' ', '-') }}">{{ cat|upper
+        }}</button>
+    {% endfor %}
+</div>
+
+<div class="search-box" style="margin-bottom:30px;">
+    <input type="text" id="q" onkeyup="search()" placeholder="Buscar por nombre o marca...">
+</div>
+
+<div class="table-container">
+    <table id="t">
+        <thead>
+            <tr>
+                <th>EQUIPO</th>
+                <th>MARCA</th>
+                <th>CATEGORÍA</th>
+                <th>DISPONIBILIDAD</th>
+                <th style="text-align:right;">ACCIÓN</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for e in equipos %}
+            <tr class="item-fila" data-categoria="{{ e.categoria }}">
+                <td><b>{{ e.nombre }}</b></td>
+                <td>{{ e.marca }}</td>
+                <td><span class="badge">{{ e.categoria }}</span></td>
+                <td>
+                    {% set disp = e.cantidad_total - e.cantidad_en_uso %}
+                    <span
+                        style="color: {{ '#00ff88' if disp > 0 else '#ff4444' }}; font-family: 'JetBrains Mono'; font-weight: 600;">
+                        {{ disp }} / {{ e.cantidad_total }} Disponibles
+                    </span>
+                </td>
+                <td style="text-align:right;"><a href="/equipo/{{ e.id }}" class="btn-outline">VER FICHA</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<style>
+    .filter-tabs {
+        background: rgba(255, 255, 255, 0.02);
+        padding: 8px;
+        border-radius: 14px;
+        border: 1px solid var(--border);
+    }
+
+    .filter-btn {
+        background: rgba(255, 255, 255, 0.03);
+        color: var(--text-dim);
+        border: 1px solid var(--border);
+        padding: 14px;
+        border-radius: 10px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 1px;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        text-transform: uppercase;
+    }
+
+    .filter-btn:hover {
+        background: rgba(255, 255, 255, 0.08);
+        color: var(--text-main);
+        transform: translateY(-2px);
+        border-color: var(--border-hover);
+    }
+
+    .filter-btn.active-filter {
+        background: var(--orange) !important;
+        color: #000 !important;
+        border-color: var(--orange) !important;
+        box-shadow: 0 4px 15px var(--orange-glow);
+    }
+</style>
+
 <script>
-function search() {
-    let q = document.getElementById('q').value.toLowerCase();
-    document.querySelectorAll('.item-fila').forEach(f => {
-        f.style.display = f.innerText.toLowerCase().includes(q) ? "" : "none";
-    });
-}
+    let currentCategory = 'all';
+
+    function filterByCategory(cat) {
+        currentCategory = cat;
+
+        // Actualizar estilos de botones
+        document.querySelectorAll('.filter-tabs .filter-btn').forEach(btn => {
+            btn.classList.remove('active-filter');
+        });
+
+        let activeBtnId = cat === 'all' ? 'btn-all' : 'btn-' + cat.replace(/\s+/g, '-');
+        let activeBtn = document.getElementById(activeBtnId);
+        if (activeBtn) activeBtn.classList.add('active-filter');
+
+        search(); // Ejecutar búsqueda para aplicar ambos filtros
+    }
+
+    function search() {
+        let q = document.getElementById('q').value.toLowerCase();
+
+        document.querySelectorAll('.item-fila').forEach(f => {
+            let texto = f.innerText.toLowerCase();
+            let categoria = f.getAttribute('data-categoria');
+
+            let matchesText = texto.includes(q);
+            let matchesCategory = (currentCategory === 'all' || categoria === currentCategory);
+
+            f.style.display = (matchesText && matchesCategory) ? "" : "none";
+        });
+    }
 </script>
 {% endblock %}

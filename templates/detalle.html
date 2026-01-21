@@ -1,51 +1,93 @@
 {% extends "base.html" %}
 {% block content %}
-<a href="/" style="color:var(--text-dim); text-decoration:none; font-size:0.7rem;">[ ← VOLVER ]</a>
+<div style="margin-bottom: 30px;">
+    <a href="/" class="btn-outline" style="font-size:0.7rem; border-width: 1px;">← VOLVER AL LISTADO</a>
+</div>
 
-<div style="display: grid; grid-template-columns: 1fr 350px; gap: 20px; margin-top:20px;">
-    <div class="form-box">
-        <h1 style="margin:0;">{{ e.nombre }}</h1>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
-            <div>
-                <label style="color:var(--orange); font-size:0.7rem;">MARCA</label><p>{{ e.marca }}</p>
-                <label style="color:var(--orange); font-size:0.7rem;">CATEGORÍA</label><p>{{ e.categoria }}</p>
+<div style="display: grid; grid-template-columns: 1fr 350px; gap: 30px;">
+    <div class="card">
+        <h1 style="margin:0; font-size: 2rem;">{{ e.nombre }}</h1>
+        <p style="color:var(--text-dim); font-size:0.8rem; margin-top:5px; font-family: 'JetBrains Mono';">ID Activo:
+            #{{ e.id }} | Registrado: {{ e.fecha_ingreso }}</p>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 30px;">
+            <div class="form-box" style="padding: 15px;">
+                <label style="color:var(--orange); font-size:0.7rem; font-weight:800; letter-spacing: 0.5px;">MARCA /
+                    MODELO</label>
+                <p style="margin:8px 0 0 0; font-weight: 600;">{{ e.marca }}</p>
             </div>
-            <div>
-                <label style="color:var(--orange); font-size:0.7rem;">STOCK</label><p>{{ e.cantidad_en_uso }} / {{ e.cantidad_total }} en uso</p>
+            <div class="form-box" style="padding: 15px;">
+                <label
+                    style="color:var(--orange); font-size:0.7rem; font-weight:800; letter-spacing: 0.5px;">CATEGORÍA</label>
+                <p style="margin:8px 0 0 0;"><span class="badge">{{ e.categoria }}</span></p>
             </div>
         </div>
 
-        <form action="/equipo/{{ e.id }}/update" method="POST" enctype="multipart/form-data" style="margin-top: 30px;">
-            <label style="color:var(--orange); font-size:0.7rem;">OBSERVACIONES</label><br>
-            <textarea name="observaciones" rows="6" style="width:100%; margin-top:10px; color:#00ff88; font-family:'JetBrains Mono';">{{ e.observaciones }}</textarea>
-            <div style="margin-top:20px; display:flex; justify-content:space-between;">
-                <input type="file" name="manual" style="font-size:0.7rem;">
-                <button type="submit" class="btn-main">GUARDAR CAMBIOS</button>
+        <div class="form-box" style="margin-top: 20px; padding: 15px;">
+            <label style="color:var(--orange); font-size:0.7rem; font-weight:800; letter-spacing: 0.5px;">ESTADO DE
+                STOCK</label>
+            <p style="margin:8px 0 0 0; font-family: 'JetBrains Mono'; font-size: 1.1rem;">
+                <span style="color: var(--orange); font-weight: 700;">{{ e.cantidad_en_uso }}</span>
+                <span style="color: var(--text-dim); font-size: 0.9rem;">/ {{ e.cantidad_total }} en uso</span>
+            </p>
+        </div>
+
+        <form action="/equipo/{{ e.id }}/update" method="POST" enctype="multipart/form-data"
+            style="margin-top: 35px; border-top: 1px solid var(--border); padding-top:25px;">
+            <label style="color:var(--orange); font-size:0.7rem; font-weight:800; letter-spacing: 1px;">OBSERVACIONES /
+                NOTAS TÉCNICAS</label>
+            <textarea name="observaciones" rows="6"
+                style="margin-top:15px; color:var(--green); font-family:'JetBrains Mono'; font-size:0.85rem;"
+                placeholder="Escribe notas aquí...">{{ e.observaciones }}</textarea>
+
+            <div style="margin-top:25px; display:flex; justify-content:space-between; align-items:flex-end; gap: 20px;">
+                <div style="flex-grow: 1;">
+                    <label
+                        style="display:block; font-size:0.7rem; color:var(--text-dim); font-weight: 600; margin-bottom: 8px;">CARGAR
+                        MANUAL / FOTO</label>
+                    <input type="file" name="manual"
+                        style="font-size:0.8rem; background: transparent; padding: 0; border: none;">
+                </div>
+                <button type="submit" class="btn-main">ACTUALIZAR FICHA</button>
             </div>
         </form>
     </div>
 
-    <div>
-        <div class="form-box" style="margin-bottom:20px;">
-            <h4 style="margin:0 0 10px 0; color:var(--orange);">DOCUMENTO</h4>
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+        <div class="card">
+            <h4
+                style="margin:0 0 15px 0; color:var(--orange); font-size:0.85rem; font-weight: 800; text-transform: uppercase;">
+                DOCUMENTACIÓN</h4>
             {% if e.manual_filename %}
-                <a href="{{ url_for('download_manual', filename=e.manual_filename) }}" style="color:#00ff88; font-weight:bold; text-decoration:none;">⬇ DESCARGAR MANUAL</a>
+            <a href="{{ url_for('download_manual', filename=e.manual_filename) }}" class="btn-outline" target="_blank"
+                style="width: 100%; border-style: dashed; color: var(--green); border-color: var(--green); box-sizing: border-box;">
+                VER DOCUMENTO ADJUNTO
+            </a>
             {% else %}
-                <p style="color:var(--text-dim); font-size:0.7rem;">No hay archivos.</p>
+            <div style="padding: 20px; text-align: center; border: 1px dashed var(--border); border-radius: 12px;">
+                <p style="color:var(--text-dim); font-size:0.75rem; margin: 0;">Sin archivos cargados.</p>
+            </div>
             {% endif %}
         </div>
-        <div class="form-box">
-            <h4 style="margin:0 0 10px 0; color:var(--orange);">HISTORIAL RECIENTE</h4>
-            <div style="font-size:0.7rem;">
+
+        <div class="card">
+            <h4
+                style="margin:0 0 15px 0; color:var(--orange); font-size:0.85rem; font-weight: 800; text-transform: uppercase;">
+                ÚLTIMOS MOVIMIENTOS</h4>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
                 {% for h in e.movimientos|reverse %}
-                    {% if loop.index <= 5 %}
-                    <div style="border-bottom:1px solid #222; padding:5px 0;">
-                        {{ h.fecha.strftime('%d/%m/%y') }} - <b>{{ h.tipo }}</b> (x{{ h.cantidad }})
-                    </div>
-                    {% endif %}
-                {% endfor %}
+                {% if loop.index <= 5 %} <div
+                    style="padding: 10px; background: rgba(255,255,255,0.02); border-radius: 8px; display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem;">
+                    <span style="color: var(--text-dim);">{{ h.fecha.strftime('%d/%m/%y') }}</span>
+                    <b
+                        style="color:{{ 'var(--orange)' if h.tipo == 'SALIDA' else 'var(--green)' }}; letter-spacing: 0.5px;">{{
+                        h.tipo }}</b>
+                    <span style="font-family: 'JetBrains Mono'; font-weight: 700;">x{{ h.cantidad }}</span>
             </div>
+            {% endif %}
+            {% endfor %}
         </div>
     </div>
+</div>
 </div>
 {% endblock %}
