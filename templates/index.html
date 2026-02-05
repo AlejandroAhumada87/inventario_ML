@@ -2,7 +2,12 @@
 {% block content %}
 <div class="header-actions">
     <h1>INVENTARIO GENERAL</h1>
-    <a href="/exportar" class="btn-outline" style="color:var(--green); border-color:var(--green);">↓ EXPORTAR EXCEL</a>
+    <div style="display:flex; gap:10px;">
+        <a href="/exportar_movimientos" class="btn-outline" style="color:var(--orange); border-color:var(--orange);">↓
+            MOVIMIENTOS (CSV)</a>
+        <a href="/exportar" class="btn-outline" style="color:var(--green); border-color:var(--green);">↓ EXPORTAR
+            EXCEL</a>
+    </div>
 </div>
 
 <div class="form-box" style="margin-bottom: 40px;">
@@ -32,48 +37,207 @@
                 <th>TOTAL</th>
                 <th>EN USO</th>
                 <th>DISPONIBLE</th>
-                <th>MOVIMIENTO POR LOTE</th>
-                <th style="text-align: right;">ACCIONES</th>
+                <th>MOVIMIENTO</th>
+                <th style="text-align: right;">ACCIÓN</th>
             </tr>
         </thead>
         <tbody>
             {% for e in equipos %}
-            {% set disp = e.cantidad_total - e.cantidad_en_uso %}
-            <tr style="{{ 'opacity:0.6; background:rgba(255,0,0,0.05);' if disp == 0 }}">
-                <td>
+            {% if e.categoria == 'Luminarias' %}
+            <tr style="{{ 'background:rgba(215, 0, 0, 0.1);' if e.cantidad_total == e.cantidad_en_uso }}">
+                <td data-label="Equipo">
                     <span style="display:block; font-weight:700;">{{ e.nombre }}</span>
                     <small style="color:var(--text-dim)">{{ e.marca }}</small>
                 </td>
-                <td><span class="badge">{{ e.categoria }}</span></td>
-                <td style="font-family: 'JetBrains Mono';">{{ e.cantidad_total }}</td>
-                <td style="color:var(--orange); font-family: 'JetBrains Mono'; font-weight:bold;">{{ e.cantidad_en_uso
-                    }}</td>
-                <td
-                    style="font-family: 'JetBrains Mono'; font-weight: bold; color: {{ '#00ff88' if disp > 0 else '#ff4444' }}">
-                    [{{ disp }}]
+                <td data-label="Categoría"><span class="badge" style="background: var(--orange); color: #000;">{{
+                        e.categoria }}</span></td>
+                <td data-label="Total" style="font-family: 'JetBrains Mono';">{{ e.cantidad_total }}</td>
+                <td data-label="En Uso" style="color:var(--orange); font-family: 'JetBrains Mono'; font-weight:bold;">{{
+                    e.cantidad_en_uso }}</td>
+                <td data-label="Disponible"
+                    style="font-family: 'JetBrains Mono'; font-weight: bold; color: {{ '#00ff88' if (e.cantidad_total - e.cantidad_en_uso) > 0 else '#ff4444' }}">
+                    {{ e.cantidad_total - e.cantidad_en_uso }}
                 </td>
-                <td>
-                    <form action="/movimiento/{{ e.id }}/prestar" method="POST"
-                        style="display:flex; gap:8px; align-items: center;">
-                        <input type="number" name="cant_lote" value="1" min="1" title="Cantidad"
-                            style="width:65px; text-align: center;" required>
-                        <input type="text" name="usuario" placeholder="¿Quién o Dónde?"
-                            style="width:130px; font-size:0.75rem;" required>
-                        <button type="submit" class="btn-main" {{ 'disabled' if disp==0 }}
-                            style="{{ 'filter:grayscale(1); cursor:not-allowed;' if disp == 0 }}; padding: 8px 15px;">SALIDA</button>
-                        <button type="submit" formaction="/movimiento/{{ e.id }}/devolver" class="btn-main"
-                            style="background:var(--green); padding: 8px 15px;" {{ 'disabled' if e.cantidad_en_uso==0
-                            }}>RETORNO</button>
+                <td data-label="Movimiento" style="text-align: center;">
+                    <a href="/equipo/{{ e.id }}/individuales" class="btn-outline" style="font-size: 0.8rem;">
+                        IR A GESTIÓN
+                    </a>
+                </td>
+                <td style="text-align: right;">
+                    <div class="actions-list">
+                        <a href="/equipo/{{ e.id }}?next=/" class="btn-outline">FICHA</a>
+                    </div>
+                </td>
+            </tr>
+            {% elif e.gestion_individual %}
+            {# Listado individual para otros equipos #}
+            {% if e.equipos_individuales %}
+            {% for ind in e.equipos_individuales | sort(attribute='numero_fixture') %}
+            <tr
+                style="{{ 'background:rgba(215, 0, 0, 0.2); border-left: 5px solid red;' if ind.danado else ('opacity:0.6; background:rgba(255,0,0,0.05);' if ind.en_uso) }}">
+                <td data-label="Equipo">
+                    <span style="display:block; font-weight:700;">
+                        {{ e.nombre }} <span style="color:var(--orange)">#{{ ind.numero_fixture }}</span>
+                        {% if ind.danado %}
+                        <span
+                            style="color:var(--red); font-size:0.7rem; vertical-align:middle; background:rgba(255,255,255,0.1); padding:2px 5px; border-radius:4px; margin-left:5px;">⚠️
+                            DAÑADO</span>
+                        {% endif %}
+                    </span>
+                    <small style="color:var(--text-dim)">SN: {{ ind.numero_serie }} | {{ e.marca }}</small>
+                </td>
+                <td data-label="Categoría"><span class="badge" style="background: var(--orange); color: #000;">{{
+                        e.categoria }}</span></td>
+                <td data-label="Total" style="font-family: 'JetBrains Mono';">-</td>
+                <td data-label="En Uso" style="color:var(--orange); font-family: 'JetBrains Mono'; font-weight:bold;">
+                    {{ 'SI' if ind.en_uso else 'NO' }}
+                </td>
+                <td data-label="Disponible"
+                    style="font-family: 'JetBrains Mono'; font-weight: bold; color: {{ '#00ff88' if not ind.en_uso and not ind.danado else '#ff4444' }}">
+                    {{ 'DISPONIBLE' if not ind.en_uso and not ind.danado else ('EN USO' if ind.en_uso else 'DAÑADO') }}
+                </td>
+                <td data-label="Movimiento">
+                    <form method="POST" style="display:flex; flex-direction: column; gap:10px; min-width: 220px;">
+                        <input type="hidden" name="cant_lote" value="1">
+                        <input type="hidden" name="ind_id" value="{{ ind.id }}">
+
+                        <div style="display:flex; gap:8px;">
+                            <input type="text" name="donde" list="list-ubicaciones" placeholder="¿Dónde?"
+                                value="{{ ind.ubicacion_actual if ind.en_uso else '' }}"
+                                style="flex:1; height: 38px; font-size:0.8rem;" required>
+                        </div>
+
+                        <div style="display:flex; flex-direction: column; gap:10px;">
+                            <button type="submit" formaction="/movimiento/{{ e.id }}/prestar" class="btn-main"
+                                {{ 'disabled' if ind.en_uso or ind.danado }}
+                                style="padding: 10px; font-size: 0.75rem; {{ 'filter:grayscale(1); opacity:0.5;' if ind.en_uso or ind.danado }}">
+                                REGISTRAR SALIDA
+                            </button>
+
+                            <div style="display:grid; grid-template-columns: 1fr 80px; gap: 8px;">
+                                <button type="submit" formaction="/movimiento/{{ e.id }}/devolver" class="btn-main"
+                                    style="background:var(--green); padding: 10px; font-size: 0.75rem;" {{ 'disabled' if
+                                    not ind.en_uso }}>
+                                    REGISTRAR RETORNO
+                                </button>
+                                <select name="estado_retorno"
+                                    style="padding: 2px; font-size: 0.7rem; height: 38px; border-radius: 4px;">
+                                    <option value="Buen Estado">OK</option>
+                                    <option value="Dañado">⚠️ DAÑADO</option>
+                                </select>
+                            </div>
+                        </div>
                     </form>
                 </td>
                 <td style="text-align: right;">
-                    <a href="/equipo/{{ e.id }}" class="btn-outline">FICHA</a>
-                    <a href="/delete/{{ e.id }}" onclick="return confirm('¿Eliminar equipo?')"
-                        style="color:var(--red); margin-left:15px; text-decoration:none; font-size:1.2rem;">&times;</a>
+                    <div class="actions-list">
+                        <a href="/equipo/{{ e.id }}?next=/" class="btn-outline">FICHA</a>
+                    </div>
                 </td>
             </tr>
+            {% endfor %}
+            {% else %}
+            {# Mostrar el equipo base si aún no tiene unidades individuales ingresadas #}
+            <tr>
+                <td data-label="Equipo">
+                    <span style="display:block; font-weight:700;">{{ e.nombre }}</span>
+                    <small style="color:var(--text-dim)">{{ e.marca }}</small>
+                    <div style="margin-top: 5px; color: var(--orange); font-size: 0.75rem; font-weight: bold;">
+                        ⚠️ SIN UNIDADES INGRESADAS
+                    </div>
+                </td>
+                <td data-label="Categoría"><span class="badge" style="background: var(--orange); color: #000;">{{
+                        e.categoria }}</span></td>
+                <td data-label="Total" style="font-family: 'JetBrains Mono';">{{ e.cantidad_total }}</td>
+                <td data-label="En Uso" style="color:var(--orange); font-family: 'JetBrains Mono'; font-weight:bold;">-
+                </td>
+                <td data-label="Disponible"
+                    style="font-family: 'JetBrains Mono'; font-weight: bold; color: var(--text-dim)">
+                    PENDIENTE
+                </td>
+                <td data-label="Movimiento"
+                    style="text-align: center; color: var(--text-dim); font-size: 0.8rem; padding: 20px;">
+                    Configura las unidades en la ficha técnica
+                </td>
+                <td style="text-align: right;">
+                    <div class="actions-list">
+                        <a href="/equipo/{{ e.id }}?next=/" class="btn-outline">FICHA</a>
+                    </div>
+                </td>
+            </tr>
+            {% endif %}
+            {% else %}
+            {# Comportamiento original para el resto de categorías #}
+            {% set disp = e.cantidad_total - e.cantidad_en_uso %}
+            <tr
+                style="{{ 'background:rgba(215, 0, 0, 0.1);' if e.danado else ('opacity:0.6; background:rgba(255,0,0,0.05);' if disp == 0) }}">
+                <td data-label="Equipo">
+                    <span style="display:block; font-weight:700;">
+                        {{ e.nombre }}
+                        {% if e.danado %}
+                        <span
+                            style="color:var(--red); font-size:0.7rem; vertical-align:middle; background:rgba(255,255,255,0.1); padding:2px 5px; border-radius:4px; margin-left:5px;">⚠️
+                            DAÑADO</span>
+                        {% endif %}
+                    </span>
+                    <small style="color:var(--text-dim)">{{ e.marca }}</small>
+                </td>
+                <td data-label="Categoría"><span class="badge">{{ e.categoria }}</span></td>
+                <td data-label="Total" style="font-family: 'JetBrains Mono';">{{ e.cantidad_total }}</td>
+                <td data-label="En Uso" style="color:var(--orange); font-family: 'JetBrains Mono'; font-weight:bold;">{{
+                    e.cantidad_en_uso }}</td>
+                <td data-label="Disponible"
+                    style="font-family: 'JetBrains Mono'; font-weight: bold; color: {{ '#00ff88' if disp > 0 else '#ff4444' }}">
+                    [{{ disp }}]
+                </td>
+                <td data-label="Movimiento">
+                    <form method="POST" style="display:flex; flex-direction: column; gap:10px; min-width: 220px;">
+                        <div style="display:flex; gap:8px;">
+                            <input type="number" name="cant_lote" value="1" min="1" title="Cantidad"
+                                style="width:60px; text-align: center; height: 38px;" required>
+                            <input type="text" name="donde" list="list-ubicaciones" placeholder="¿Dónde?"
+                                style="flex:1; height: 38px; font-size:0.8rem;" required>
+                        </div>
+
+                        <div style="display:flex; flex-direction: column; gap:10px;">
+                            <button type="submit" formaction="/movimiento/{{ e.id }}/prestar" class="btn-main"
+                                {{ 'disabled' if disp==0 }}
+                                style="padding: 10px; font-size: 0.75rem; {{ 'filter:grayscale(1); opacity:0.5;' if disp == 0 }}">
+                                REGISTRAR SALIDA
+                            </button>
+
+                            <div style="display:grid; grid-template-columns: 1fr 80px; gap: 8px;">
+                                <button type="submit" formaction="/movimiento/{{ e.id }}/devolver" class="btn-main"
+                                    style="background:var(--green); padding: 10px; font-size: 0.75rem;" {{ 'disabled' if
+                                    e.cantidad_en_uso==0 }}>
+                                    REGISTRAR RETORNO
+                                </button>
+                                <select name="estado_retorno"
+                                    style="padding: 2px; font-size: 0.7rem; height: 38px; border-radius: 4px;">
+                                    <option value="Buen Estado">OK</option>
+                                    <option value="Dañado">⚠️ DAÑADO</option>
+                                </select>
+                            </div>
+                        </div>
+                    </form>
+                </td>
+                <td style="text-align: right;">
+                    <div class="actions-list">
+                        <a href="/equipo/{{ e.id }}?next=/" class="btn-outline">FICHA</a>
+                        <a href="/delete/{{ e.id }}" onclick="return confirm('¿Eliminar equipo?')" class="btn-delete"
+                            title="Eliminar">&times;</a>
+                    </div>
+                </td>
+            </tr>
+            {% endif %}
             {% endfor %}
         </tbody>
     </table>
 </div>
+
+<datalist id="list-ubicaciones">
+    {% for urb in ubicaciones %}
+    <option value="{{ urb }}">
+        {% endfor %}
+</datalist>
 {% endblock %}

@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="header-actions">
+    <h1>GESTIÓN DE LUMINARIAS</h1>
+</div>
+
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>FAMILIA / EQUIPO</th>
+                <th>MARCA</th>
+                <th>TOTAL</th>
+                <th>EN USO</th>
+                <th>DISPONIBLE</th>
+                <th style="text-align: right;">ACCIÓN</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for e in equipos %}
+            {% set disp = e.cantidad_total - e.cantidad_en_uso %}
+            <tr style="{{ 'background:rgba(255, 0, 0, 0.1);' if disp == 0 }}">
+                <td data-label="Equipo">
+                    <span style="display:block; font-weight:700;">{{ e.nombre }}</span>
+                </td>
+                <td data-label="Marca">{{ e.marca }}</td>
+                <td data-label="Total" style="font-family: 'JetBrains Mono';">{{ e.cantidad_total }}</td>
+                <td data-label="En Uso" style="color:var(--orange); font-family: 'JetBrains Mono'; font-weight:bold;">{{
+                    e.cantidad_en_uso }}</td>
+                <td data-label="Disponible"
+                    style="font-family: 'JetBrains Mono'; font-weight: bold; color: {{ '#00ff88' if disp > 0 else '#ff4444' }}">
+                    {{ disp }}
+                </td>
+                <td style="text-align: right; display: flex; justify-content: flex-end; gap: 8px;">
+                    <a href="/equipo/{{ e.id }}" class="btn-outline" style="padding: 8px 16px; font-size: 0.8rem;">
+                        VER FICHA
+                    </a>
+                    <a href="/equipo/{{ e.id }}/individuales" class="btn-main"
+                        style="padding: 8px 16px; font-size: 0.8rem;">
+                        GESTIONAR FAMILIA
+                    </a>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" style="text-align: center; padding: 40px; color: var(--text-dim);">
+                    No hay luminarias registradas.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

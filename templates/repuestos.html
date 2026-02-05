@@ -1,0 +1,79 @@
+9{% extends "base.html" %}
+{% block content %}
+<div class="header-actions" style="margin-bottom: 30px;">
+    <h1>INVENTARIO DE REPUESTOS</h1>
+</div>
+
+<!-- Buscador y Filtros -->
+<div class="search-box" style="margin-bottom: 20px;">
+    <input type="text" id="q" onkeyup="search()" placeholder="Buscar repuesto por nombre...">
+</div>
+
+
+<div class="form-box" style="margin-bottom: 40px;">
+    <h3 style="margin:0 0 15px 0; color:var(--orange); font-size: 0.8rem; letter-spacing:1px;">+ REGISTRAR NUEVO
+        REPUESTO
+    </h3>
+    <form action="/repuesto/add" method="POST"
+        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">
+        <input type="text" name="nombre" placeholder="Nombre Repuesto" required>
+
+        <select name="categoria" required>
+            <option value="" disabled selected>Categoría...</option>
+            {% for cat in categorias %}
+            <option value="{{ cat }}">{{ cat }}</option>
+            {% endfor %}
+        </select>
+        <input type="number" name="cantidad" placeholder="Cantidad" required min="1">
+        <input type="text" name="equipo_asociado_texto" placeholder="Equipo Asociado (Texto)"
+            style="grid-column: span 2;">
+        <button type="submit" class="btn-main">AÑADIR A BODEGA</button>
+    </form>
+</div>
+
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>REPUESTO</th>
+                <th>CATEGORÍA</th>
+                <th>STOCK</th>
+                <th>EQUIPO ASOCIADO</th>
+                <th style="text-align: right;">ACCIONES</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in repuestos %}
+            <tr class="item-fila" data-categoria="{{ r.categoria }}">
+                <td data-label="Repuesto">
+                    <span style="display:block; font-weight:700;">{{ r.nombre }}</span>
+                </td>
+                <td data-label="Categoría"><span class="badge">{{ r.categoria }}</span></td>
+                <td data-label="Stock" style="font-family: 'JetBrains Mono'; font-weight: bold; color:var(--green);">{{
+                    r.cantidad }}</td>
+                <td data-label="Asociado" style="color:var(--text-dim); font-size: 0.9rem;">{{ r.equipo_asociado_texto
+                    or '--' }}</td>
+                <td style="text-align: right;">
+                    <div class="actions-list">
+                        <a href="/repuesto/{{ r.id }}" class="btn-outline">VER FICHA</a>
+                        <a href="/repuesto/delete/{{ r.id }}" onclick="return confirm('¿Eliminar repuesto?')"
+                            class="btn-delete" title="Eliminar">&times;</a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+</div>
+
+<script>
+    function search() {
+        let q = document.getElementById('q').value.toLowerCase();
+        document.querySelectorAll('.item-fila').forEach(f => {
+            let texto = f.innerText.toLowerCase();
+            f.style.display = texto.includes(q) ? "" : "none";
+        });
+    }
+</script>
+{% endblock %}

@@ -12,15 +12,32 @@
     {% endfor %}
 </div>
 
-<div class="search-box" style="margin-bottom:30px;">
-    <input type="text" id="q" onkeyup="search()" placeholder="Buscar por nombre o marca...">
+<div class="search-box" style="margin-bottom:20px; display: flex; gap: 15px;">
+    <input type="text" id="q" onkeyup="search()" placeholder="Buscar por nombre, marca, SN u observaciones..."
+        style="flex: 2;">
+
+    <div class="status-filters" style="display: flex; gap: 10px; flex: 1.5;">
+        <select id="status-filter" onchange="search()" style="width: 100%; height: 50px;">
+            <option value="all">TODOS LOS ESTADOS</option>
+            <option value="disponible">DISPONIBLE</option>
+            <option value="en-terreno">EN TERRENO / EN USO</option>
+            <option value="danado">⚠️ DAÑADO</option>
+        </select>
+
+        <select id="location-filter" onchange="search()" style="width: 100%; height: 50px;">
+            <option value="all">TODOS LOS LUGARES</option>
+            {% for urb in ubicaciones %}
+            <option value="{{ urb }}">{{ urb | upper }}</option>
+            {% endfor %}
+        </select>
+    </div>
 </div>
 
 <div class="table-container">
     <table id="t">
         <thead>
             <tr>
-                <th>EQUIPO</th>
+                <th>EQUIPO / SN</th>
                 <th>MARCA</th>
                 <th>CATEGORÍA</th>
                 <th>DISPONIBILIDAD</th>
@@ -29,19 +46,84 @@
         </thead>
         <tbody>
             {% for e in equipos %}
-            <tr class="item-fila" data-categoria="{{ e.categoria }}">
-                <td><b>{{ e.nombre }}</b></td>
-                <td>{{ e.marca }}</td>
-                <td><span class="badge">{{ e.categoria }}</span></td>
-                <td>
-                    {% set disp = e.cantidad_total - e.cantidad_en_uso %}
+            {% if e.gestion_individual %}
+            {% if e.equipos_individuales %}
+            {% for ind in e.equipos_individuales %}
+            {% set ind_ubicacion = ind.ubicacion_actual or "" %}
+            <tr class="item-fila" data-categoria="{{ e.categoria }}"
+                data-observaciones="{{ e.observaciones }} {{ ind.observaciones_individuales }} {{ ind.numero_serie }}"
+                data-disponible="{{ 'true' if not ind.en_uso and not ind.danado else 'false' }}"
+                data-en-terreno="{{ 'true' if ind.en_uso else 'false' }}"
+                data-danado="{{ 'true' if ind.danado else 'false' }}" data-ubicaciones="{{ ind_ubicacion }}"
+                style="{{ 'background:rgba(215, 0, 0, 0.1);' if ind.danado }}">
+                <td data-label="Equipo">
+                    <b>{{ e.nombre }} <span style="color:var(--orange)">#{{ ind.numero_fixture }}</span></b><br>
+                    <small style="color:var(--text-dim)">SN: {{ ind.numero_serie }}</small>
+                </td>
+                <td data-label="Marca">{{ e.marca }}</td>
+                <td data-label="Categoría"><span class="badge" style="background: var(--orange); color: #000;">{{
+                        e.categoria }}</span></td>
+                <td data-label="Estado">
+                    {% if ind.danado %}
+                    <span style="color: var(--red); font-weight: 700;">⚠️ DAÑADO</span>
+                    {% elif ind.en_uso %}
+                    <span style="color: var(--orange); font-weight: 600;">EN USO ({{ ind.ubicacion_actual }})</span>
+                    {% else %}
+                    <span style="color: var(--green); font-weight: 600;">✓ DISPONIBLE</span>
+                    {% endif %}
+                </td>
+                <td style="text-align:right;">
+                    <div class="actions-list">
+                        <a href="/equipo/{{ e.id }}?next=/buscar" class="btn-outline">VER FICHA</a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+            {% else %}
+            {# Fallback para equipos individuales sin unidades aún #}
+            <tr class="item-fila" data-categoria="{{ e.categoria }}" data-observaciones="{{ e.observaciones }}"
+                data-disponible="false" data-en-terreno="false" data-danado="false" data-ubicaciones="">
+                <td data-label="Equipo">
+                    <b>{{ e.nombre }}</b><br>
+                    <small style="color:var(--orange)">⚠️ GESTIÓN INDIVIDUAL SIN UNIDADES</small>
+                </td>
+                <td data-label="Marca">{{ e.marca }}</td>
+                <td data-label="Categoría"><span class="badge" style="background: var(--orange); color: #000;">{{
+                        e.categoria }}</span></td>
+                <td data-label="Estado">
+                    <span style="color: var(--text-dim); font-weight: 600;">PENDIENTE DE CARGA</span>
+                </td>
+                <td style="text-align:right;">
+                    <div class="actions-list">
+                        <a href="/equipo/{{ e.id }}?next=/buscar" class="btn-outline">VER FICHA</a>
+                    </div>
+                </td>
+            </tr>
+            {% endif %}
+            {% else %}
+            {% set disp = e.cantidad_total - e.cantidad_en_uso %}
+            {% set eq_ubicaciones = e.movimientos | map(attribute='usuario') | unique | list | join(',') %}
+            <tr class="item-fila" data-categoria="{{ e.categoria }}" data-observaciones="{{ e.observaciones }}"
+                data-disponible="{{ 'true' if disp > 0 else 'false' }}"
+                data-en-terreno="{{ 'true' if e.cantidad_en_uso > 0 else 'false' }}"
+                data-danado="{{ 'true' if e.danado else 'false' }}" data-ubicaciones="{{ eq_ubicaciones }}"
+                style="{{ 'background:rgba(215, 0, 0, 0.1);' if e.danado }}">
+                <td data-label="Equipo"><b>{{ e.nombre }}</b></td>
+                <td data-label="Marca">{{ e.marca }}</td>
+                <td data-label="Categoría"><span class="badge">{{ e.categoria }}</span></td>
+                <td data-label="Estado">
                     <span
                         style="color: {{ '#00ff88' if disp > 0 else '#ff4444' }}; font-family: 'JetBrains Mono'; font-weight: 600;">
                         {{ disp }} / {{ e.cantidad_total }} Disponibles
                     </span>
                 </td>
-                <td style="text-align:right;"><a href="/equipo/{{ e.id }}" class="btn-outline">VER FICHA</a></td>
+                <td style="text-align:right;">
+                    <div class="actions-list">
+                        <a href="/equipo/{{ e.id }}?next=/buscar" class="btn-outline">VER FICHA</a>
+                    </div>
+                </td>
             </tr>
+            {% endif %}
             {% endfor %}
         </tbody>
     </table>
@@ -104,15 +186,30 @@
 
     function search() {
         let q = document.getElementById('q').value.toLowerCase();
+        let statusFilter = document.getElementById('status-filter').value;
+        let locationFilter = document.getElementById('location-filter').value.toLowerCase();
 
         document.querySelectorAll('.item-fila').forEach(f => {
             let texto = f.innerText.toLowerCase();
+            let observaciones = (f.getAttribute('data-observaciones') || "").toLowerCase();
             let categoria = f.getAttribute('data-categoria');
+            let ubicaciones = (f.getAttribute('data-ubicaciones') || "").toLowerCase();
 
-            let matchesText = texto.includes(q);
+            let isDisp = f.getAttribute('data-disponible') === 'true';
+            let isEnTerreno = f.getAttribute('data-en-terreno') === 'true';
+            let isDanado = f.getAttribute('data-danado') === 'true';
+
+            let matchesText = texto.includes(q) || observaciones.includes(q);
             let matchesCategory = (currentCategory === 'all' || categoria === currentCategory);
 
-            f.style.display = (matchesText && matchesCategory) ? "" : "none";
+            let matchesStatus = true;
+            if (statusFilter === 'disponible') matchesStatus = isDisp;
+            if (statusFilter === 'en-terreno') matchesStatus = isEnTerreno;
+            if (statusFilter === 'danado') matchesStatus = isDanado;
+
+            let matchesLocation = (locationFilter === 'all' || (ubicaciones && ubicaciones.includes(locationFilter)));
+
+            f.style.display = (matchesText && matchesCategory && matchesStatus && matchesLocation) ? "" : "none";
         });
     }
 </script>

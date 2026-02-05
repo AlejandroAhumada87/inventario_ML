@@ -1,0 +1,63 @@
+Para conectar tu Chromebook CX550 a una consola grandMA3 mediante **Web Remote**, necesitamos asegurar }
+que ambos dispositivos "hablen el mismo idioma" dentro de la red. Es un proceso genial porque te permite 
+tener un foco de mano o una pantalla extra de supervisión sin cables. 📱✨
+
+Aquí tienes el paso a paso detallado para lograrlo:
+
+### 1. Preparación de la Red 🌐
+
+Lo primero es la conexión física o inalámbrica.
+
+* 
+**Conexión de la Consola:** Asegúrate de que tu consola esté conectada a un router o access point 
+inalámbrico mediante el puerto **Ethernet 1**.
+
+
+* **Conexión de la Chromebook:** Conecta tu CX550 a la misma red Wi-Fi que genera ese router.
+
+### 2. Configuración de IP en la Consola 🔢
+
+Debemos saber la dirección de la consola para buscarla desde la Chromebook.
+
+* En la consola, ve a **Menu** > **Settings** > **Network**.
+
+
+* Verifica la dirección IP de la consola (por ejemplo, `192.168.1.100`). Asegúrate de que el 
+**Interface** seleccionado sea el correcto (normalmente el que tiene el cable conectado).
+
+
+
+### 3. Habilitar el Web Remote en MA3 🖥️
+
+Por seguridad, el acceso remoto puede estar desactivado por defecto.
+
+* Dentro del mismo menú de **Network**, busca la pestaña o sección de **Web Remote**.
+
+
+* Asegúrate de que la opción **Web Remote** esté en **On**.
+* **Dato importante:** Aquí también verás el "Remote Password". Anótalo si es necesario, 
+aunque por defecto suele ser `admin`.
+
+### 4. Acceso desde la Chromebook 💻
+
+* Abre el navegador **Google Chrome** en tu CX550.
+* En la barra de direcciones, escribe la dirección IP de la consola que anotaste en el paso 2 
+(ejemplo: `192.168.1.100`) y pulsa Enter.
+* Te aparecerá una pantalla de inicio de sesión. Introduce el nombre de usuario y la contraseña 
+(por defecto suelen ser `admin` / `admin`).
+
+---
+
+### 💡 Datos curiosos y Tips de Especialista
+
+* **El "Modo Quiosco":** En tu Chromebook, puedes presionar la tecla **F11** para poner el navegador en 
+pantalla completa. ¡Parecerá que tienes una unidad de extensión nativa de MA!
+* **Dato de Venue:** ¿Sabías que en las grandes **Arenas**, los técnicos suelen usar el Web Remote no 
+solo para enfocar, sino para chequear el estado del rig desde las gradas más altas? Esto les permite ver 
+ángulos que desde la cabina de control son imposibles de apreciar. 🏟️
+* **Latencia:** Si notas retraso, asegúrate de que tu router esté en una frecuencia de **5GHz** 
+en lugar de 2.4GHz. En entornos con muchos teléfonos móviles (como un teatro lleno), la banda 2.4GHz 
+se satura y el Web Remote puede volverse lento.
+
+¿Te gustaría que profundizáramos en cómo configurar un **User Profile** específico para que cuando 
+entres desde tu Chromebook veas solo las ventanas que te interesan? 🛠️

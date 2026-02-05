@@ -1,54 +1,93 @@
 {% extends "base.html" %}
 {% block content %}
-<div style="margin-bottom: 30px;">
-    <a href="/" class="btn-outline" style="font-size:0.7rem; border-width: 1px;">← VOLVER AL LISTADO</a>
+<div style="margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center;">
+    {% set next_url = request.args.get('next', '/') %}
+    <div>
+    <a href="{{ next_url }}" class="btn-outline" style="font-size:0.7rem; border-width: 1px;">← VOLVER</a>
+    </div>
+    
+    {% if e.gestion_individual %}
+    <a href="/equipo/{{ e.id }}/individuales" class="btn-main" 
+       style="background: linear-gradient(135deg, var(--orange), #ff6b35); padding: 12px 24px; font-size: 0.85rem; box-shadow: 0 4px 15px rgba(255, 165, 0, 0.3);">
+        📋 GESTIÓN INDIVIDUAL ({{ e.equipos_individuales|length }} equipos)
+    </a>
+    {% endif %}
 </div>
 
 <div style="display: grid; grid-template-columns: 1fr 350px; gap: 30px;">
     <div class="card">
-        <h1 style="margin:0; font-size: 2rem;">{{ e.nombre }}</h1>
-        <p style="color:var(--text-dim); font-size:0.8rem; margin-top:5px; font-family: 'JetBrains Mono';">ID Activo:
-            #{{ e.id }} | Registrado: {{ e.fecha_ingreso }}</p>
+        <form action="/equipo/{{ e.id }}/update" method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="next" value="{{ next_url }}">
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 30px;">
-            <div class="form-box" style="padding: 15px;">
-                <label style="color:var(--orange); font-size:0.7rem; font-weight:800; letter-spacing: 0.5px;">MARCA /
-                    MODELO</label>
-                <p style="margin:8px 0 0 0; font-weight: 600;">{{ e.marca }}</p>
+            <input type="text" name="nombre" value="{{ e.nombre }}"
+                style="font-size: 2rem; font-weight: bold; width: 100%; border: none; background: transparent; color: white; margin-bottom: 10px;"
+                placeholder="Nombre del Equipo">
+
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 30px;">
+                <p style="color:var(--text-dim); font-size:0.8rem; margin:0; font-family: 'JetBrains Mono';">ID: #{{
+                    e.id }} | Registrado:</p>
+                <input type="date" name="fecha_ingreso" value="{{ e.fecha_ingreso }}"
+                    style="background: transparent; border: 1px solid var(--border); color: var(--text-dim); font-family: 'JetBrains Mono'; font-size: 0.8rem; padding: 2px 5px; border-radius: 4px;">
             </div>
-            <div class="form-box" style="padding: 15px;">
-                <label
-                    style="color:var(--orange); font-size:0.7rem; font-weight:800; letter-spacing: 0.5px;">CATEGORÍA</label>
-                <p style="margin:8px 0 0 0;"><span class="badge">{{ e.categoria }}</span></p>
-            </div>
-        </div>
 
-        <div class="form-box" style="margin-top: 20px; padding: 15px;">
-            <label style="color:var(--orange); font-size:0.7rem; font-weight:800; letter-spacing: 0.5px;">ESTADO DE
-                STOCK</label>
-            <p style="margin:8px 0 0 0; font-family: 'JetBrains Mono'; font-size: 1.1rem;">
-                <span style="color: var(--orange); font-weight: 700;">{{ e.cantidad_en_uso }}</span>
-                <span style="color: var(--text-dim); font-size: 0.9rem;">/ {{ e.cantidad_total }} en uso</span>
-            </p>
-        </div>
-
-        <form action="/equipo/{{ e.id }}/update" method="POST" enctype="multipart/form-data"
-            style="margin-top: 35px; border-top: 1px solid var(--border); padding-top:25px;">
-            <label style="color:var(--orange); font-size:0.7rem; font-weight:800; letter-spacing: 1px;">OBSERVACIONES /
-                NOTAS TÉCNICAS</label>
-            <textarea name="observaciones" rows="6"
-                style="margin-top:15px; color:var(--green); font-family:'JetBrains Mono'; font-size:0.85rem;"
-                placeholder="Escribe notas aquí...">{{ e.observaciones }}</textarea>
-
-            <div style="margin-top:25px; display:flex; justify-content:space-between; align-items:flex-end; gap: 20px;">
-                <div style="flex-grow: 1;">
-                    <label
-                        style="display:block; font-size:0.7rem; color:var(--text-dim); font-weight: 600; margin-bottom: 8px;">CARGAR
-                        MANUAL / FOTO</label>
-                    <input type="file" name="manual"
-                        style="font-size:0.8rem; background: transparent; padding: 0; border: none;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div class="form-box" style="padding: 15px;">
+                    <label style="color:var(--orange); font-size:0.7rem; font-weight:800; letter-spacing: 0.5px;">MARCA
+                        / MODELO</label>
+                    <input type="text" name="marca" value="{{ e.marca }}"
+                        style="width: 100%; background: transparent; border: none; border-bottom: 1px solid var(--border); color: white; padding: 5px 0; font-weight: 600; margin-top: 5px;">
                 </div>
-                <button type="submit" class="btn-main">ACTUALIZAR FICHA</button>
+                <div class="form-box" style="padding: 15px;">
+                    <label
+                        style="color:var(--orange); font-size:0.7rem; font-weight:800; letter-spacing: 0.5px;">CATEGORÍA</label>
+                    <select name="categoria"
+                        style="width: 100%; background: transparent; border: none; border-bottom: 1px solid var(--border); color: white; padding: 5px 0; margin-top: 5px;">
+                        {% for cat in categorias %}
+                        <option value="{{ cat }}" {% if e.categoria==cat %}selected{% endif %}>{{ cat }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-box"
+                style="margin-top: 20px; padding: 15px; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <label style="color:var(--orange); font-size:0.7rem; font-weight:800; letter-spacing: 0.5px;">ESTADO
+                        DE STOCK</label>
+                    <div style="display: flex; align-items: center; gap: 10px; margin-top: 8px;">
+                        <span
+                            style="color: var(--orange); font-weight: 700; font-family: 'JetBrains Mono'; font-size: 1.1rem;">{{
+                            e.cantidad_en_uso }}</span>
+                        <span style="color: var(--text-dim); font-size: 0.9rem;">/</span>
+                        <input type="number" name="cantidad_total" value="{{ e.cantidad_total }}" min="1"
+                            style="width: 60px; background: transparent; border: 1px solid var(--border); color: white; font-family: 'JetBrains Mono'; font-size: 1.1rem; padding: 2px 5px; text-align: center; border-radius: 4px;">
+                        <span style="color: var(--text-dim); font-size: 0.9rem;">en total</span>
+                    </div>
+                </div>
+                <!-- Nuevo: Checkbox para estado de daño -->
+                <div style="text-align: right;">
+                    <label
+                        style="display: flex; align-items: center; gap: 8px; cursor: pointer; background: {{ 'rgba(255,0,0,0.1)' if e.danado else 'transparent' }}; padding: 10px; border-radius: 8px; border: 1px solid {{ 'red' if e.danado else 'var(--border)' }}">
+                        <input type="checkbox" name="danado" {% if e.danado %}checked{% endif %}
+                            style="width: 20px; height: 20px; accent-color: red;">
+                        <span
+                            style="color: {{ 'red' if e.danado else 'var(--text-dim)' }}; font-weight: bold; font-size: 0.8rem;">⚠️
+                            MARCAR COMO DAÑADO</span>
+                    </label>
+                </div>
+            </div>
+
+            <div style="margin-top: 35px; border-top: 1px solid var(--border); padding-top:25px;">
+                <label
+                    style="color:var(--orange); font-size:0.7rem; font-weight:800; letter-spacing: 1px;">OBSERVACIONES /
+                    NOTAS TÉCNICAS</label>
+                <textarea name="observaciones" rows="6"
+                    style="margin-top:15px; color:var(--green); font-family:'JetBrains Mono'; font-size:0.85rem;"
+                    placeholder="Escribe notas aquí...">{{ e.observaciones }}</textarea>
+
+                <div style="margin-top:25px; text-align: right;">
+                    <button type="submit" class="btn-main">ACTUALIZAR FICHA</button>
+                </div>
             </div>
         </form>
     </div>
@@ -57,17 +96,59 @@
         <div class="card">
             <h4
                 style="margin:0 0 15px 0; color:var(--orange); font-size:0.85rem; font-weight: 800; text-transform: uppercase;">
-                DOCUMENTACIÓN</h4>
-            {% if e.manual_filename %}
-            <a href="{{ url_for('download_manual', filename=e.manual_filename) }}" class="btn-outline" target="_blank"
-                style="width: 100%; border-style: dashed; color: var(--green); border-color: var(--green); box-sizing: border-box;">
-                VER DOCUMENTO ADJUNTO
-            </a>
-            {% else %}
-            <div style="padding: 20px; text-align: center; border: 1px dashed var(--border); border-radius: 12px;">
-                <p style="color:var(--text-dim); font-size:0.75rem; margin: 0;">Sin archivos cargados.</p>
+                DOCUMENTACIÓN
+            </h4>
+
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+                {% if e.manual_filename %}
+                <div
+                    style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border: 1px dashed var(--green); border-radius: 4px;">
+                    <a href="{{ url_for('download_manual', filename=e.manual_filename) }}" target="_blank"
+                        style="color: var(--green); text-decoration: none; font-size: 0.8rem;">
+                        <span style="font-weight: bold;">MANUAL / PRINCIPAL</span>
+                    </a>
+                </div>
+                {% endif %}
+
+                {% for doc in e.documentos %}
+                <div
+                    style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border: 1px solid var(--border); border-radius: 4px;">
+                    <a href="{{ url_for('download_manual', filename=doc.filename) }}" target="_blank"
+                        style="color: white; text-decoration: none; font-size: 0.8rem;">
+                        {{ doc.nombre_referencial }}
+                    </a>
+                    <form action="{{ url_for('delete_documento', doc_id=doc.id) }}" method="POST" style="margin: 0;">
+                        <button type="submit" onclick="return confirm('¿Eliminar documento?')" class="btn-delete"
+                            style="font-size: 1.2rem; background: none; border: none;" title="Eliminar">&times;</button>
+                    </form>
+                </div>
+                {% endfor %}
+
+                {% if not e.manual_filename and not e.documentos %}
+                <div style="padding: 10px; text-align: center; border: 1px dashed var(--border); border-radius: 8px;">
+                    <p style="color:var(--text-dim); font-size:0.75rem; margin: 0;">Sin documentación adicional.</p>
+                </div>
+                {% endif %}
             </div>
-            {% endif %}
+
+            <!-- Upload Form -->
+            <form action="{{ url_for('add_documento', id=e.id) }}" method="POST" enctype="multipart/form-data"
+                style="border-top: 1px solid var(--border); padding-top: 15px;">
+                <label
+                    style="display:block; font-size:0.7rem; color:var(--text-dim); font-weight: 600; margin-bottom: 8px;">AGREGAR
+                    NUEVO DOCUMENTO</label>
+
+                <input type="text" name="referencia" placeholder="Nombre referencial (ej. Plano, Manual 2)"
+                    style="width: 100%; box-sizing: border-box; background: transparent; border: 1px solid var(--border); color: white; padding: 5px; margin-bottom: 10px; font-size: 0.8rem; border-radius: 4px;"
+                    required>
+
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <input type="file" name="documento" required
+                        style="font-size:0.75rem; width: 100%; color: var(--text-dim);">
+                    <button type="submit" class="btn-outline"
+                        style="font-size: 0.7rem; padding: 5px 10px; white-space: nowrap;">SUBIR</button>
+                </div>
+            </form>
         </div>
 
         <div class="card">
@@ -87,6 +168,80 @@
             {% endif %}
             {% endfor %}
         </div>
+    </div>
+
+    <!-- SECCIÓN DE COMPATIBILIDAD -->
+    <div class="card" style="border-top: 4px solid var(--orange);">
+        <h4
+            style="margin:0 0 15px 0; color:var(--orange); font-size:0.85rem; font-weight: 800; text-transform: uppercase;">
+            COMPATIBILIDAD
+        </h4>
+
+        {% if e.categoria == "Repuestos/Spare" %}
+        <!-- Selector para Repuestos -->
+        <form action="{{ url_for('add_compatibilidad', id=e.id) }}" method="POST" style="margin-bottom: 20px;">
+            <label
+                style="display:block; font-size:0.7rem; color:var(--text-dim); font-weight: 600; margin-bottom: 8px;">
+                VINCULAR CON LUMINARIA
+            </label>
+            <div style="display: flex; gap: 10px;">
+                <select name="compatible_id" required
+                    style="flex-grow: 1; background: transparent; border: 1px solid var(--border); color: white; padding: 5px; border-radius: 4px; font-size: 0.8rem;">
+                    <option value="" disabled selected>Seleccionar...</option>
+                    {% for lum in luminarias %}
+                    {% if lum not in e.compatibles %}
+                    <option value="{{ lum.id }}">{{ lum.nombre }} ({{ lum.marca }})</option>
+                    {% endif %}
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn-outline" style="font-size: 0.7rem; padding: 5px 10px;">LINK</button>
+            </div>
+        </form>
+
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+            <p style="font-size: 0.7rem; color: var(--text-dim); margin-bottom: 5px; font-weight: 600;">EQUIPOS
+                COMPATIBLES:</p>
+            {% for comp in e.compatibles %}
+            <div
+                style="display: flex; justify-content: space-between; align-items: center; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 4px; border: 1px solid var(--border);">
+                <a href="{{ url_for('detalle_equipo', id=comp.id) }}"
+                    style="color: white; text-decoration: none; font-size: 0.8rem;">
+                    {{ comp.nombre }}
+                </a>
+                <form action="{{ url_for('remove_compatibilidad', id=e.id, comp_id=comp.id) }}" method="POST"
+                    style="margin: 0;">
+                    <button type="submit" class="btn-delete" title="Quitar">&times;</button>
+                </form>
+            </div>
+            {% endfor %}
+            {% if not e.compatibles %}
+            <p style="color: var(--text-dim); font-size: 0.8rem; font-style: italic; text-align: center;">Sin
+                compatibilidades registradas.</p>
+            {% endif %}
+        </div>
+
+        {% elif e.categoria == "Luminarias" %}
+        <!-- Vista para Luminarias -->
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+            <p style="font-size: 0.7rem; color: var(--text-dim); margin-bottom: 5px; font-weight: 600;">REPUESTOS
+                VINCULADOS:</p>
+            {% for rep in e.repuestos_asociados %}
+            <div
+                style="display: flex; justify-content: space-between; align-items: center; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 4px; border: 1px solid var(--border);">
+                <a href="/repuesto/{{ rep.id }}" style="color: white; text-decoration: none; font-size: 0.8rem;">
+                    {{ rep.nombre }} (Stock: {{ rep.cantidad }})
+                </a>
+            </div>
+            {% endfor %}
+            {% if not e.repuestos_asociados %}
+            <p style="color: var(--text-dim); font-size: 0.8rem; font-style: italic; text-align: center;">No hay
+                repuestos vinculados.</p>
+            {% endif %}
+        </div>
+        {% else %}
+        <p style="color: var(--text-dim); font-size: 0.8rem; font-style: italic; text-align: center;">Sección no
+            aplicable a esta categoría.</p>
+        {% endif %}
     </div>
 </div>
 </div>

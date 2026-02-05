@@ -15,6 +15,37 @@
     --glass: blur(10px);
 }
 
+.actions-list {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 15px;
+}
+
+.btn-delete {
+    color: var(--red);
+    text-decoration: none;
+    font-size: 1.4rem;
+    font-weight: 800;
+    line-height: 1;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    background: rgba(255, 68, 68, 0.05);
+    border: 1px solid transparent;
+}
+
+.btn-delete:hover {
+    background: rgba(255, 68, 68, 0.15);
+    border-color: var(--red);
+    transform: scale(1.1);
+}
+
+
 body {
     font-family: 'Inter', sans-serif;
     background-color: var(--dark-bg);
@@ -108,6 +139,20 @@ nav {
     border-radius: 8px;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.nav-icon {
+    font-size: 1.2rem;
+    opacity: 0.7;
+    transition: transform 0.3s ease;
+}
+
+.nav-links a:hover .nav-icon {
+    transform: scale(1.2);
+    opacity: 1;
 }
 
 .nav-links a:hover {
@@ -280,6 +325,11 @@ select {
     box-sizing: border-box;
 }
 
+select option {
+    background: #1a1a1a;
+    color: white;
+}
+
 input:focus,
 textarea:focus,
 select:focus {
@@ -356,28 +406,200 @@ select:focus {
 }
 
 /* Responsive */
+/* Mobile Refinement (Premium / App-like) */
 @media (max-width: 768px) {
+    body {
+        padding-bottom: 80px;
+        /* Space for bottom nav */
+    }
+
     nav {
-        padding: 1rem;
-        flex-direction: column;
-        gap: 20px;
+        padding: 0.8rem 1.5rem;
+        flex-direction: row;
+        /* Keep it horizontal */
+        justify-content: space-between;
+        gap: 0;
+        height: 60px;
+        position: sticky;
+        top: 0;
     }
 
     .nav-left {
-        flex-direction: column;
-        gap: 15px;
+        flex-direction: row;
+        gap: 0;
+        width: 100%;
+        justify-content: space-between;
     }
 
+    .brand-wrapper {
+        align-items: flex-start;
+    }
+
+    .brand-name {
+        font-size: 1.4rem;
+    }
+
+    .brand-subtitle {
+        font-size: 0.9rem;
+    }
+
+    /* Transform main links into a bottom navigation bar */
     .nav-links {
-        flex-wrap: wrap;
-        justify-content: center;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: rgba(10, 10, 10, 0.95);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        padding: 10px 15px;
+        display: flex;
+        justify-content: space-around;
+        gap: 5px;
+        border-top: 1px solid var(--border);
+        z-index: 1001;
+        box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.5);
     }
 
-    .logo-header {
-        height: 100px;
+    .nav-links a {
+        padding: 8px 5px;
+        font-size: 0.6rem;
+        flex-direction: column;
+        display: flex;
+        align-items: center;
+        border-radius: 12px;
+        gap: 4px;
+        letter-spacing: 0;
+        text-align: center;
+        flex: 1;
+        font-weight: 700;
+    }
+
+    .nav-icon {
+        font-size: 1.4rem;
+        opacity: 1;
+    }
+
+    .nav-links a.active {
+        background: rgba(255, 102, 0, 0.15);
+        color: var(--orange);
+    }
+
+    /* Hide logo in mobile to save space if needed or scale it down */
+    .nav-right {
+        display: none;
     }
 
     .container {
-        padding: 20px 1rem;
+        padding: 15px;
+    }
+
+    h1 {
+        font-size: 1.8rem;
+        margin-bottom: 1.5rem;
+        text-align: center;
+    }
+
+    /* Premium Card Layout for Mobile */
+    .table-container {
+        background: transparent;
+        border: none;
+    }
+
+    table,
+    thead,
+    tbody,
+    th,
+    td,
+    tr {
+        display: block;
+    }
+
+    thead tr {
+        position: absolute;
+        top: -9999px;
+        left: -9999px;
+    }
+
+    tr {
+        background: linear-gradient(145deg, rgba(30, 30, 30, 0.8), rgba(15, 15, 15, 0.9));
+        margin-bottom: 20px;
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 20px;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        position: relative;
+        overflow: hidden;
+    }
+
+    tr::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: var(--orange);
+        opacity: 0.7;
+    }
+
+    td {
+        border: none;
+        padding: 12px 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.85rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    td:last-child {
+        border-bottom: none;
+        margin-top: 15px;
+        padding-top: 20px;
+        justify-content: center;
+        width: 100%;
+        gap: 15px;
+    }
+
+    /* First TD is usually the main identifier */
+    td:first-child {
+        display: block;
+        text-align: left;
+        font-size: 1.2rem;
+        font-weight: 800;
+        color: var(--orange);
+        border-bottom: 1px solid rgba(255, 102, 0, 0.2);
+        padding-bottom: 15px;
+        margin-bottom: 8px;
+    }
+
+    td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.7rem;
+        color: var(--text-dim);
+    }
+
+    /* Actions icons buttons on mobile */
+    .actions-list {
+        justify-content: center;
+        width: 100%;
+    }
+
+    .btn-main,
+    .btn-outline {
+        padding: 14px 20px;
+        border-radius: 12px;
+        font-size: 0.9rem;
+    }
+
+    /* Flash messages on mobile */
+    .flash-messages {
+        top: 20px;
+        left: 15px;
+        right: 15px;
+        max-width: none;
     }
 }

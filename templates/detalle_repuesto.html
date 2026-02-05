@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="margin-bottom: 30px;">
+    {% set next_url = request.args.get('next', '/repuestos') %}
+    <a href="{{ next_url }}" class="btn-outline" style="font-size:0.7rem; border-width: 1px;">← VOLVER</a>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 350px; gap: 30px;">
+    <div class="card">
+        <form action="/repuesto/{{ r.id }}/update" method="POST">
+
+            <input type="text" name="nombre" value="{{ r.nombre }}"
+                style="font-size: 2rem; font-weight: bold; width: 100%; border: none; background: transparent; color: white; margin-bottom: 10px;"
+                placeholder="Nombre del Repuesto">
+
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 30px;">
+                <p style="color:var(--text-dim); font-size:0.8rem; margin:0; font-family: 'JetBrains Mono';">ID: #{{
+                    r.id }}</p>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+
+                <div class="form-box" style="padding: 15px;">
+                    <label
+                        style="color:var(--orange); font-size:0.7rem; font-weight:800; letter-spacing: 0.5px;">CATEGORÍA</label>
+                    <select name="categoria"
+                        style="width: 100%; background: transparent; border: none; border-bottom: 1px solid var(--border); color: white; padding: 5px 0; margin-top: 5px;">
+                        {% for cat in categorias %}
+                        <option value="{{ cat }}" {% if r.categoria==cat %}selected{% endif %}>{{ cat }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-box" style="margin-top: 20px; padding: 15px;">
+                <label style="color:var(--orange); font-size:0.7rem; font-weight:800; letter-spacing: 0.5px;">CANTIDAD
+                    EN STOCK</label>
+                <input type="number" name="cantidad" value="{{ r.cantidad }}" min="0"
+                    style="width: 100%; background: transparent; border: none; border-bottom: 1px solid var(--border); color: var(--green); font-family: 'JetBrains Mono'; font-size: 1.5rem; padding: 5px 0; margin-top: 5px;">
+            </div>
+
+            <div style="margin-top: 35px; border-top: 1px solid var(--border); padding-top:25px;">
+                <label style="color:var(--orange); font-size:0.7rem; font-weight:800; letter-spacing: 1px;">EQUIPO /
+                    SERIE ASOCIADA (TEXTO)</label>
+                <input type="text" name="equipo_asociado_texto" value="{{ r.equipo_asociado_texto or '' }}"
+                    style="width: 100%; background: transparent; border: 1px solid var(--border); color: white; padding: 10px; margin-top: 10px; font-size: 0.9rem;">
+                <p style="color:var(--text-dim); font-size:0.75rem; margin-top:5px;">Indique textualment a qué equipo o
+                    serie pertenece este repuesto (ej. "Serie VL 3000, Mac Viper").</p>
+
+                <div style="margin-top:25px; text-align: right;">
+                    <button type="submit" class="btn-main">ACTUALIZAR REPUESTO</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- SECCIÓN DE VINCULACIÓN -->
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+        <div class="card" style="border-top: 4px solid var(--orange);">
+            <h4
+                style="margin:0 0 15px 0; color:var(--orange); font-size:0.85rem; font-weight: 800; text-transform: uppercase;">
+                VINCULAR CON EQUIPO
+            </h4>
+            <p style="color:var(--text-dim); font-size:0.75rem; margin-bottom: 15px;">Vincula este repuesto directamente
+                a las fichas de los equipos del inventario.</p>
+
+            <form action="/repuesto/{{ r.id }}/link_equipo" method="POST" style="margin-bottom: 20px;">
+                <div style="display: flex; gap: 10px;">
+                    <select name="equipo_id" required
+                        style="flex-grow: 1; background: transparent; border: 1px solid var(--border); color: white; padding: 5px; border-radius: 4px; font-size: 0.8rem;">
+                        <option value="" disabled selected>Seleccionar Equipo...</option>
+                        {% for eq in equipos %}
+                        {% if eq not in r.equipos %}
+                        <option value="{{ eq.id }}">{{ eq.nombre }}</option>
+                        {% endif %}
+                        {% endfor %}
+                    </select>
+                    <button type="submit" class="btn-outline"
+                        style="font-size: 0.7rem; padding: 5px 10px;">LINK</button>
+                </div>
+            </form>
+
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <p style="font-size: 0.7rem; color: var(--text-dim); margin-bottom: 5px; font-weight: 600;">EQUIPOS
+                    VINCULADOS:</p>
+                {% for eq in r.equipos %}
+                <div
+                    style="display: flex; justify-content: space-between; align-items: center; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 4px; border: 1px solid var(--border);">
+                    <a href="/equipo/{{ eq.id }}" target="_blank"
+                        style="color: white; text-decoration: none; font-size: 0.8rem;">
+                        {{ eq.nombre }}
+                    </a>
+                    <form action="/repuesto/{{ r.id }}/unlink_equipo/{{ eq.id }}" method="POST" style="margin: 0;">
+                        <button type="submit" class="btn-delete" title="Desvincular">&times;</button>
+                    </form>
+                </div>
+                {% endfor %}
+                {% if not r.equipos %}
+                <p style="color: var(--text-dim); font-size: 0.8rem; font-style: italic; text-align: center;">Sin
+                    equipos vinculados.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

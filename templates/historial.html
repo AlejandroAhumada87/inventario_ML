@@ -4,7 +4,7 @@
 
 <div class="search-box" style="margin-bottom:30px;">
     <input type="text" id="filtroHistorial" onkeyup="filtrarH()"
-        placeholder="Filtrar por equipo, responsable o tipo...">
+        placeholder="Filtrar por equipo, responsable, tipo o fixture #...">
 </div>
 
 <div class="table-container">
@@ -15,20 +15,48 @@
                 <th>EQUIPO</th>
                 <th>CANTIDAD</th>
                 <th>TIPO</th>
-                <th>RESPONSABLE</th>
+                <th>DESTINO / LUGAR</th>
+                <th style="display:none;">OBSERVACIONES</th>
+                <th>ESTADO</th>
             </tr>
         </thead>
         <tbody>
             {% for h in registros %}
-            <tr class="fila-h">
-                <td style="color:var(--text-dim); font-family: 'JetBrains Mono'; font-size: 0.8rem;">{{
-                    h.fecha.strftime('%d/%m/%Y %H:%M') }}</td>
-                <td><b>{{ h.equipo.nombre }}</b></td>
+            <tr class="fila-h" style="{{ 'background: rgba(255,0,0,0.1);' if h.estado_al_retorno == 'Dañado' }}">
+                <td style="color:var(--text-dim); font-family: 'JetBrains Mono'; font-size: 0.8rem;">
+                    {{ h.fecha.strftime('%d/%m/%Y %H:%M') }}
+                </td>
+                <td>
+                    <b>{{ h.equipo.nombre if h.equipo else "Eliminado" }}</b>
+                    {% if h.equipo_individual %}
+                    <span
+                        style="color: var(--orange); font-family: 'JetBrains Mono'; font-weight: 800; margin-left: 5px;">
+                        #{{ h.equipo_individual.numero_fixture }}
+                    </span>
+                    {% endif %}
+                </td>
                 <td><span style="font-family: 'JetBrains Mono'; font-weight: 700;">x{{ h.cantidad }}</span></td>
-                <td><span class="badge"
-                        style="color: {{ 'var(--orange)' if h.tipo == 'SALIDA' else 'var(--green)' }}">{{ h.tipo
-                        }}</span></td>
-                <td><span style="color: var(--orange); font-weight: 600;">@{{ h.usuario }}</span></td>
+                <td>
+                    <span class="badge" style="color: {{ 'var(--orange)' if h.tipo == 'SALIDA' else 'var(--green)' }}">
+                        {{ h.tipo }}
+                    </span>
+                </td>
+                <td>
+                    <span style="color: var(--orange); font-weight: 600; text-transform: uppercase;">
+                        {{ h.usuario }}
+                    </span>
+                </td>
+                <td style="display:none;">{{ h.observaciones }}</td>
+                <td>
+                    {% if h.tipo == 'RETORNO' %}
+                    <span
+                        style="color: {{ 'var(--red)' if h.estado_al_retorno == 'Dañado' else 'var(--green)' }}; font-weight:bold;">
+                        {{ h.estado_al_retorno }}
+                    </span>
+                    {% else %}
+                    -
+                    {% endif %}
+                </td>
             </tr>
             {% endfor %}
         </tbody>
