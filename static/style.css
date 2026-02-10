@@ -56,6 +56,17 @@ body {
     margin: 0;
     line-height: 1.6;
     overflow-x: hidden;
+    animation: fadeInPage 0.5s ease-out;
+}
+
+@keyframes fadeInPage {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
 /* Scrollbar */
@@ -205,6 +216,15 @@ nav {
 
 .card:hover {
     border-color: var(--border-hover);
+}
+
+/* Fix for flickering/flockeo in containers */
+.table-container,
+.form-box,
+.card {
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    transform: translateZ(0);
 }
 
 /* Typography */

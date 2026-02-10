@@ -1,10 +1,12 @@
-from flask import Flask, render_template, request, redirect, url_for, send_from_directory, flash, Response
+from flask import Flask, render_template, request, redirect, url_for, send_from_directory, flash, Response, session
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 import os
 import pandas as pd
 from io import BytesIO
 from werkzeug.utils import secure_filename
+from werkzeug.security import generate_password_hash, check_password_hash
+from functools import wraps
 
 app = Flask(__name__)
 app.secret_key = "media_lighting_secret_key" # Necesario para mensajes Flash
@@ -109,9 +111,28 @@ class EquipoIndividual(db.Model):
     # Relación con historial
     movimientos = db.relationship('Historial', backref='equipo_individual', foreign_keys='Historial.equipo_individual_id')
 
+class Usuario(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(50), unique=True, nullable=False)
+    password_hash = db.Column(db.String(200), nullable=False)
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            flash("Por favor, inicia sesión para acceder.", "warning")
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 with app.app_context():
     db.create_all()
+    # Crear usuario por defecto si no hay ninguno
+    if not Usuario.query.first():
+        hashed_pw = generate_password_hash("admin123")
+        admin = Usuario(username="admin", password_hash=hashed_pw)
+        db.session.add(admin)
+        db.session.commit()
 
 # --- FUNCIONES AUXILIARES ---
 import shutil
@@ -125,6 +146,36 @@ def realizar_backup():
         shutil.copy2(db_path, backup_path)
 
 @app.route('/')
+def welcome():
+    if 'user_id' in session:
+        return redirect(url_for('index'))
+    return render_template('welcome.html')
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        user = request.form.get('username')
+        pw = request.form.get('password')
+        usuario = Usuario.query.filter_by(username=user).first()
+        
+        if usuario and check_password_hash(usuario.password_hash, pw):
+            session['user_id'] = usuario.id
+            session['username'] = usuario.username
+            flash(f"Bienvenido de nuevo, {usuario.username}!", "success")
+            return redirect(url_for('index'))
+        else:
+            flash("Usuario o contraseña incorrectos.", "error")
+            
+    return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    flash("Has cerrado sesión correctamente.", "info")
+    return redirect(url_for('welcome'))
+
+@app.route('/inventario')
+@login_required
 def index():
     equipos = Equipo.query.filter(Equipo.categoria != 'Luminarias').order_by(Equipo.id.desc()).all()
     # Obtener lista única de ubicaciones/destinos para el filtro
@@ -133,6 +184,7 @@ def index():
     return render_template('index.html', equipos=equipos, categorias=CATEGORIAS, ubicaciones=ubicaciones)
 
 @app.route('/equipo/<int:id>')
+@login_required
 def detalle_equipo(id):
     e = Equipo.query.get_or_404(id)
     # Solo necesitamos las luminarias para el selector de compatibilidad si es un repuesto
@@ -143,6 +195,7 @@ def detalle_equipo(id):
     return render_template('detalle.html', e=e, categorias=CATEGORIAS, luminarias=luminarias)
 
 @app.route('/equipo/<int:id>/update', methods=['POST'])
+@login_required
 def update_equipo(id):
     e = Equipo.query.get_or_404(id)
     
@@ -179,10 +232,12 @@ def update_equipo(id):
     return redirect(url_for('detalle_equipo', id=id))
 
 @app.route('/download/<filename>')
+@login_required
 def download_manual(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 @app.route('/movimiento/<int:id>/<tipo>', methods=['POST'])
+@login_required
 def movimiento(id, tipo):
     e = Equipo.query.get_or_404(id)
     # Cambiado de 'usuario' a 'donde' (ubicación física)
@@ -263,6 +318,7 @@ def movimiento(id, tipo):
     return redirect(request.referrer or url_for('index'))
 
 @app.route('/equipo/<int:id>/add_documento', methods=['POST'])
+@login_required
 def add_documento(id):
     e = Equipo.query.get_or_404(id)
     referencia = request.form.get('referencia', 'Documento sin nombre').strip()
@@ -285,6 +341,7 @@ def add_documento(id):
     return redirect(url_for('detalle_equipo', id=id))
 
 @app.route('/documento/delete/<int:doc_id>', methods=['POST'])
+@login_required
 def delete_documento(doc_id):
     doc = Documento.query.get_or_404(doc_id)
     equipo_id = doc.equipo_id
@@ -299,6 +356,7 @@ def delete_documento(doc_id):
     return redirect(url_for('detalle_equipo', id=equipo_id))
 
 @app.route('/equipo/<int:id>/add_compatibilidad', methods=['POST'])
+@login_required
 def add_compatibilidad(id):
     e = Equipo.query.get_or_404(id)
     compatible_id = request.form.get('compatible_id')
@@ -311,6 +369,7 @@ def add_compatibilidad(id):
     return redirect(url_for('detalle_equipo', id=id))
 
 @app.route('/equipo/<int:id>/remove_compatibilidad/<int:comp_id>', methods=['POST'])
+@login_required
 def remove_compatibilidad(id, comp_id):
     e = Equipo.query.get_or_404(id)
     compatible_item = Equipo.query.get(comp_id)
@@ -321,6 +380,7 @@ def remove_compatibilidad(id, comp_id):
     return redirect(url_for('detalle_equipo', id=id))
 
 @app.route('/add', methods=['POST'])
+@login_required
 def add():
     nuevo = Equipo(
         nombre=request.form.get('nom'),
@@ -337,6 +397,7 @@ def add():
     return redirect(url_for('index'))
 
 @app.route('/delete/<int:id>')
+@login_required
 def delete(id):
     equipo = Equipo.query.get(id)
     if equipo:
@@ -347,6 +408,7 @@ def delete(id):
     return redirect(url_for('index'))
 
 @app.route('/exportar')
+@login_required
 def exportar_excel():
     equipos = Equipo.query.all()
     data = []
@@ -374,6 +436,7 @@ def exportar_excel():
     )
 
 @app.route('/exportar_movimientos')
+@login_required
 def exportar_movimientos():
     ahora = datetime.now()
     # Historial del mes actual
@@ -404,11 +467,13 @@ def exportar_movimientos():
     )
 
 @app.route('/historial')
+@login_required
 def mostrar_historial():
     registros = Historial.query.order_by(Historial.id.desc()).all()
     return render_template('historial.html', registros=registros)
 
 @app.route('/buscar')
+@login_required
 def buscar():
     equipos = Equipo.query.order_by(Equipo.nombre.asc()).all()
     # También pasamos ubicaciones para filtrar en el buscador
@@ -418,6 +483,7 @@ def buscar():
 
 
 @app.route('/luminarias')
+@login_required
 def luminarias():
     equipos = Equipo.query.filter_by(categoria='Luminarias').order_by(Equipo.nombre.asc()).all()
     # Calcular cantidades reales basadas en individuales si existen
@@ -430,11 +496,13 @@ def luminarias():
 # --- RUTAS DE REPUESTOS ---
 
 @app.route('/repuestos')
+@login_required
 def repuestos():
     lista_repuestos = Repuesto.query.order_by(Repuesto.nombre.asc()).all()
     return render_template('repuestos.html', repuestos=lista_repuestos, categorias=CATEGORIAS_REPUESTOS)
 
 @app.route('/repuesto/<int:id>')
+@login_required
 def detalle_repuesto(id):
     r = Repuesto.query.get_or_404(id)
     # Lista de equipos para vincular (excluyendo los ya vinculados)
@@ -443,6 +511,7 @@ def detalle_repuesto(id):
     return render_template('detalle_repuesto.html', r=r, categorias=CATEGORIAS_REPUESTOS, equipos=equipos_disponibles)
 
 @app.route('/repuesto/add', methods=['POST'])
+@login_required
 def add_repuesto():
     nuevo = Repuesto(
         nombre=request.form.get('nombre'),
@@ -456,6 +525,7 @@ def add_repuesto():
     return redirect(url_for('repuestos'))
 
 @app.route('/repuesto/<int:id>/update', methods=['POST'])
+@login_required
 def update_repuesto(id):
     r = Repuesto.query.get_or_404(id)
     r.nombre = request.form.get('nombre', r.nombre)
@@ -471,6 +541,7 @@ def update_repuesto(id):
     return redirect(url_for('detalle_repuesto', id=id))
 
 @app.route('/repuesto/delete/<int:id>')
+@login_required
 def delete_repuesto(id):
     r = Repuesto.query.get_or_404(id)
     nombre = r.nombre
@@ -480,6 +551,7 @@ def delete_repuesto(id):
     return redirect(url_for('repuestos'))
 
 @app.route('/repuesto/<int:id>/link_equipo', methods=['POST'])
+@login_required
 def link_equipo_repuesto(id):
     r = Repuesto.query.get_or_404(id)
     equipo_id = request.form.get('equipo_id')
@@ -492,6 +564,7 @@ def link_equipo_repuesto(id):
     return redirect(url_for('detalle_repuesto', id=id))
 
 @app.route('/repuesto/<int:id>/unlink_equipo/<int:equipo_id>', methods=['POST'])
+@login_required
 def unlink_equipo_repuesto(id, equipo_id):
     r = Repuesto.query.get_or_404(id)
     equipo = Equipo.query.get(equipo_id)
@@ -504,6 +577,7 @@ def unlink_equipo_repuesto(id, equipo_id):
 # --- RUTAS DE GESTIÓN INDIVIDUAL ---
 
 @app.route('/equipo/<int:id>/individuales')
+@login_required
 def gestion_individual(id):
     """Vista principal de gestión de equipos individuales"""
     equipo_grupo = Equipo.query.get_or_404(id)
@@ -546,6 +620,7 @@ def gestion_individual(id):
                          ubicaciones=ubicaciones)
 
 @app.route('/equipo/<int:id>/individual/add', methods=['POST'])
+@login_required
 def add_individual(id):
     """Agregar un equipo individual manualmente"""
     equipo_grupo = Equipo.query.get_or_404(id)
@@ -580,6 +655,7 @@ def add_individual(id):
     return redirect(url_for('gestion_individual', id=id))
 
 @app.route('/equipo/<int:id>/individual/<int:ind_id>/update', methods=['POST'])
+@login_required
 def update_individual(id, ind_id):
     """Actualizar un equipo individual"""
     equipo_ind = EquipoIndividual.query.get_or_404(ind_id)
@@ -595,6 +671,7 @@ def update_individual(id, ind_id):
     return redirect(url_for('gestion_individual', id=id))
 
 @app.route('/equipo/<int:id>/individual/<int:ind_id>/toggle_danado', methods=['POST'])
+@login_required
 def toggle_danado_individual(id, ind_id):
     """Marcar/desmarcar equipo individual como dañado"""
     equipo_ind = EquipoIndividual.query.get_or_404(ind_id)
@@ -611,6 +688,7 @@ def toggle_danado_individual(id, ind_id):
     return redirect(url_for('gestion_individual', id=id))
 
 @app.route('/equipo/<int:id>/individual/<int:ind_id>/delete', methods=['POST'])
+@login_required
 def delete_individual(id, ind_id):
     """Eliminar un equipo individual"""
     equipo_ind = EquipoIndividual.query.get_or_404(ind_id)

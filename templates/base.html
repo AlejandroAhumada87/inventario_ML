@@ -19,6 +19,7 @@
 </head>
 
 <body>
+  {% if 'user_id' in session %}
   <nav>
     <div class="nav-left">
       <div class="brand-wrapper">
@@ -26,7 +27,7 @@
         <div class="brand-subtitle">Vecinos Al Limite</div>
       </div>
       <div class="nav-links">
-        <a href="/" class="{{ 'active' if request.path == '/' }}"><span
+        <a href="/inventario" class="{{ 'active' if request.path == '/inventario' }}"><span
             class="nav-icon">📦</span><span>INVENTARIO</span></a>
         <a href="/luminarias" class="{{ 'active' if request.path == '/luminarias' }}"><span
             class="nav-icon">🔦</span><span>LUMINARIAS</span></a>
@@ -40,9 +41,15 @@
     </div>
 
     <div class="nav-right">
-      <img src="{{ url_for('static', filename='logo.jpg') }}" alt="ML" class="logo-header">
+      <div style="display:flex; flex-direction:column; align-items:flex-end; gap:5px;">
+        <span style="font-size:0.7rem; color:var(--text-dim); font-weight:700;">{{ session['username'] }}</span>
+        <a href="/logout"
+          style="color:var(--red); text-decoration:none; font-size:0.7rem; font-weight:800; border:1px solid var(--red); padding:3px 8px; border-radius:5px;">SALIR</a>
+      </div>
+      <img src="{{ url_for('static', filename='logo.jpg') }}" alt="ML" class="logo-header" style="margin-left:20px;">
     </div>
   </nav>
+  {% endif %}
   <div class="container">
     {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
