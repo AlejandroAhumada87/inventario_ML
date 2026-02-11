@@ -1,46 +1,103 @@
-# Reality C13 | Inventario Técnico 📦
+# Sistema de Inventario ML Producciones
 
-Bienvenido al software de gestión de inventario de **Media Lighting**. Esta herramienta ha sido diseñada para facilitar el control de equipos, luminarias y repuestos de manera eficiente, con una interfaz optimizada tanto para escritorio como para dispositivos móviles.
+Aplicación web para gestión de inventario de equipos de iluminación y producción audiovisual.
 
-## 🚀 Características Principales
+## Características
 
-- **Gestión Integral**: Control de stock de luminarias, grip, insumos y accesorios.
-- **Modo Mobile Premium**: Interfaz adaptada para teléfonos con navegación por iconos y tarjetas táctiles.
-- **PWA (Progressive Web App)**: Posibilidad de instalar la app en el inicio de tu móvil para usarla a pantalla completa.
-- **Historial de Movimientos**: Registro detallado de salidas y retornos de equipo.
-- **Fichas Técnicas**: Almacenamiento de manuales y documentos técnicos por equipo.
-- **Exportación**: Generación de reportes en Excel (XLSX) y Movimientos (CSV).
+- 🔐 Sistema de autenticación (usuario: MLProducciones)
+- 📦 Gestión de inventario de equipos
+- 💡 Gestión individual de luminarias
+- 📊 Exportación de datos a Excel
+- 📝 Historial de movimientos
+- 🔧 Gestión de repuestos
+- 📄 Almacenamiento de manuales y documentos
 
-## 🛠️ Instalación y Configuración
+## Despliegue en Render
 
-1. **Clonar el repositorio**:
+La aplicación está configurada para desplegarse automáticamente en Render.
+
+### Pasos para desplegar:
+
+1. **Push al repositorio GitHub**
+   ```bash
+   git add .
+   git commit -m "Configuración para deployment en Render"
+   git push origin main
+   ```
+
+2. **Crear servicio en Render**
+   - Ve a [render.com](https://render.com) y crea una cuenta
+   - Click en "New +" → "Web Service"
+   - Conecta tu repositorio de GitHub
+   - Render detectará automáticamente el archivo `render.yaml`
+   - Click en "Create Web Service"
+
+3. **Configurar disco persistente** (importante para mantener la base de datos)
+   - En el dashboard del servicio, ve a "Disks"
+   - Verifica que el disco `inventario-data` esté montado en `/var/data`
+
+4. **Acceder a la aplicación**
+   - Render te proporcionará una URL como: `https://inventario-ml.onrender.com`
+   - Usuario: `MLProducciones` (acepta mayúsculas/minúsculas)
+   - Contraseña: `admin123`
+
+## Desarrollo Local
+
+### Requisitos
+- Python 3.11+
+- pip
+
+### Instalación
+
+1. Clonar el repositorio:
    ```bash
    git clone https://github.com/AlejandroAhumada87/inventario_ML.git
    cd inventario_ML
    ```
 
-2. **Crear entorno virtual**:
+2. Crear entorno virtual:
    ```bash
-   python -v venv venv
+   python3 -m venv venv
    source venv/bin/activate  # En Windows: venv\Scripts\activate
    ```
 
-3. **Instalar dependencias**:
+3. Instalar dependencias:
    ```bash
    pip install -r requirements.txt
    ```
 
-4. **Ejecutar la aplicación**:
+4. Ejecutar la aplicación:
    ```bash
    python app.py
    ```
 
-## 📱 Uso en Móvil
+5. Abrir en el navegador:
+   ```
+   http://localhost:5000
+   ```
 
-Para la mejor experiencia en tu teléfono:
-1. Accede a la IP de tu servidor desde el navegador móvil.
-2. Selecciona **"Añadir a pantalla de inicio"** en las opciones del navegador.
-3. Abre la app desde el nuevo icono para disfrutar de la experiencia a pantalla completa.
+## Tecnologías Utilizadas
 
----
-*Desarrollado para Reality C13 - Vecinos Al Limite*
+- **Backend**: Flask 3.1.2
+- **Base de Datos**: SQLite con SQLAlchemy
+- **Frontend**: HTML, CSS, JavaScript
+- **Deployment**: Render (con Gunicorn)
+- **Exportación**: Pandas, XlsxWriter
+
+## Estructura del Proyecto
+
+```
+inventario_ML/
+├── app.py                 # Aplicación principal Flask
+├── inventario.db          # Base de datos SQLite
+├── requirements.txt       # Dependencias Python
+├── render.yaml           # Configuración de Render
+├── templates/            # Plantillas HTML
+├── static/              # Archivos estáticos (CSS, JS, imágenes)
+├── manuales/            # Documentos y manuales subidos
+└── backups/             # Backups automáticos de la BD
+```
+
+## Licencia
+
+Proyecto privado - ML Producciones © 2026

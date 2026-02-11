@@ -9,18 +9,26 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 
 app = Flask(__name__)
-app.secret_key = "media_lighting_secret_key" # Necesario para mensajes Flash
+app.secret_key = os.environ.get("SECRET_KEY", "media_lighting_secret_key") # Usar variable de entorno en producción
 
 # --- CONFIGURACIÓN ---
 basedir = os.path.abspath(os.path.dirname(__file__))
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'inventario.db')
+
+# Configuración de base de datos: usar variable de entorno si está disponible (producción)
+# De lo contrario, usar la ruta local (desarrollo)
+db_path = os.environ.get('DATABASE_PATH', os.path.join(basedir, 'inventario.db'))
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + db_path
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['UPLOAD_FOLDER'] = os.path.join(basedir, 'manuales')
+
+# Configuración de archivos
+upload_folder = os.environ.get('UPLOAD_FOLDER', os.path.join(basedir, 'manuales'))
+app.config['UPLOAD_FOLDER'] = upload_folder
 app.config['ALLOWED_EXTENSIONS'] = {'pdf', 'doc', 'docx', 'txt', 'png', 'jpg', 'jpeg'}
 
 CATEGORIAS = sorted(["Luminarias", "Grip", "Insumos", "Equipamiento Electrico", "Accesorios"])
 CATEGORIAS_REPUESTOS = sorted(["General", "Electrónico", "Mecánico", "Óptico", "Cables/Conectores", "Otros"])
 
+# Crear carpetas necesarias si no existen
 if not os.path.exists(app.config['UPLOAD_FOLDER']):
     os.makedirs(app.config['UPLOAD_FOLDER'])
 
@@ -130,7 +138,7 @@ with app.app_context():
     # Crear usuario por defecto si no hay ninguno
     if not Usuario.query.first():
         hashed_pw = generate_password_hash("admin123")
-        admin = Usuario(username="admin", password_hash=hashed_pw)
+        admin = Usuario(username="MLProducciones", password_hash=hashed_pw)
         db.session.add(admin)
         db.session.commit()
 
@@ -156,7 +164,8 @@ def login():
     if request.method == 'POST':
         user = request.form.get('username')
         pw = request.form.get('password')
-        usuario = Usuario.query.filter_by(username=user).first()
+        # Búsqueda case-insensitive del usuario
+        usuario = Usuario.query.filter(db.func.lower(Usuario.username) == user.lower()).first()
         
         if usuario and check_password_hash(usuario.password_hash, pw):
             session['user_id'] = usuario.id

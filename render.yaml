@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: inventario-ml
+    env: python
+    region: oregon
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_PATH
+        value: /var/data/inventario.db
+    disk:
+      name: inventario-data
+      mountPath: /var/data
+      sizeGB: 1
