@@ -1,6 +1,17 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>BUSCADOR DE EQUIPOS</h1>
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; gap: 20px;">
+    <h1 style="margin: 0;">BUSCADOR DE EQUIPOS</h1>
+
+    <!-- Contador de Equipos -->
+    <div id="counter-display"
+        style="padding: 8px 16px; background: rgba(255, 102, 0, 0.05); border: 1px solid var(--border); border-right: 4px solid var(--orange); border-radius: 8px; display: flex; align-items: center; gap: 10px; animation: fadeIn 0.5s ease-out;">
+        <span
+            style="font-size: 0.70rem; font-weight: 800; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px;">Equipos:</span>
+        <span id="eq-count"
+            style="font-size: 1.5rem; font-weight: 800; color: var(--orange); font-family: 'JetBrains Mono'; line-height: 1;">0</span>
+    </div>
+</div>
 
 <!-- Botones de Filtro por Categoría -->
 <div class="filter-tabs"
@@ -14,7 +25,7 @@
 
 <div class="search-box" style="margin-bottom:20px; display: flex; gap: 15px;">
     <input type="text" id="q" onkeyup="search()" placeholder="Buscar por nombre, marca, SN u observaciones..."
-        style="flex: 2;">
+        style="flex: 2; height: 50px;">
 
     <div class="status-filters" style="display: flex; gap: 10px; flex: 1.5;">
         <select id="status-filter" onchange="search()" style="width: 100%; height: 50px;">
@@ -164,6 +175,18 @@
         border-color: var(--orange) !important;
         box-shadow: 0 4px 15px var(--orange-glow);
     }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
 </style>
 
 <script>
@@ -188,6 +211,7 @@
         let q = document.getElementById('q').value.toLowerCase();
         let statusFilter = document.getElementById('status-filter').value;
         let locationFilter = document.getElementById('location-filter').value.toLowerCase();
+        let count = 0;
 
         document.querySelectorAll('.item-fila').forEach(f => {
             let texto = f.innerText.toLowerCase();
@@ -209,8 +233,16 @@
 
             let matchesLocation = (locationFilter === 'all' || (ubicaciones && ubicaciones.includes(locationFilter)));
 
-            f.style.display = (matchesText && matchesCategory && matchesStatus && matchesLocation) ? "" : "none";
+            let isVisible = (matchesText && matchesCategory && matchesStatus && matchesLocation);
+            f.style.display = isVisible ? "" : "none";
+
+            if (isVisible) count++;
         });
+
+        document.getElementById('eq-count').innerText = count;
     }
+
+    // Inicializar el contador al cargar la página
+    window.addEventListener('DOMContentLoaded', search);
 </script>
 {% endblock %}
