@@ -51,12 +51,12 @@
                 </td>
                 <td data-label="Categoría"><span class="badge" style="background: var(--orange); color: #000;">{{
                         e.categoria }}</span></td>
-                <td data-label="Total" style="font-family: 'JetBrains Mono';">{{ e.cantidad_total }}</td>
+                <td data-label="Total" style="font-family: 'JetBrains Mono';">{{ e.total_real }}</td>
                 <td data-label="En Uso" style="color:var(--orange); font-family: 'JetBrains Mono'; font-weight:bold;">{{
-                    e.cantidad_en_uso }}</td>
+                    e.uso_real }}</td>
                 <td data-label="Disponible"
-                    style="font-family: 'JetBrains Mono'; font-weight: bold; color: {{ '#00ff88' if (e.cantidad_total - e.cantidad_en_uso) > 0 else '#ff4444' }}">
-                    {{ e.cantidad_total - e.cantidad_en_uso }}
+                    style="font-family: 'JetBrains Mono'; font-weight: bold; color: {{ '#00ff88' if e.cantidad_disponible > 0 else '#ff4444' }}">
+                    {{ e.cantidad_disponible }}
                 </td>
                 <td data-label="Movimiento" style="text-align: center;">
                     <a href="/equipo/{{ e.id }}/individuales" class="btn-outline" style="font-size: 0.8rem;">
@@ -102,9 +102,15 @@
                         <input type="hidden" name="ind_id" value="{{ ind.id }}">
 
                         <div style="display:flex; gap:8px;">
-                            <input type="text" name="donde" list="list-ubicaciones" placeholder="¿Dónde?"
-                                value="{{ ind.ubicacion_actual if ind.en_uso else '' }}"
-                                style="flex:1; height: 38px; font-size:0.8rem;" required>
+                            <select name="donde" style="flex:1; height: 38px; font-size:0.8rem;" required
+                                autocomplete="off">
+                                <option value="" disabled {{ 'selected' if not ind.en_uso }}>¿Dónde?</option>
+                                {% for urb in ubicaciones %}
+                                <option value="{{ urb }}" {{ 'selected' if ind.en_uso and ind.ubicacion_actual==urb }}>
+                                    {{ urb }}
+                                </option>
+                                {% endfor %}
+                            </select>
                         </div>
 
                         <div style="display:flex; flex-direction: column; gap:10px;">
@@ -126,6 +132,11 @@
                                     <option value="Dañado">⚠️ DAÑADO</option>
                                 </select>
                             </div>
+                            <button type="submit" formaction="/movimiento/{{ e.id }}/transferir" class="btn-outline"
+                                style="color:var(--orange); border-color:var(--orange); padding: 10px; font-size: 0.75rem; margin-top: 5px;"
+                                {{ 'disabled' if not ind.en_uso }}>
+                                ⇄ CAMBIAR LUGAR (TRANSFERIR)
+                            </button>
                         </div>
                     </form>
                 </td>
@@ -148,7 +159,7 @@
                 </td>
                 <td data-label="Categoría"><span class="badge" style="background: var(--orange); color: #000;">{{
                         e.categoria }}</span></td>
-                <td data-label="Total" style="font-family: 'JetBrains Mono';">{{ e.cantidad_total }}</td>
+                <td data-label="Total" style="font-family: 'JetBrains Mono';">{{ e.total_real }}</td>
                 <td data-label="En Uso" style="color:var(--orange); font-family: 'JetBrains Mono'; font-weight:bold;">-
                 </td>
                 <td data-label="Disponible"
@@ -168,7 +179,8 @@
             {% endif %}
             {% else %}
             {# Comportamiento original para el resto de categorías #}
-            {% set disp = e.cantidad_total - e.cantidad_en_uso %}
+            {% set disp = e.cantidad_disponible %}
+            {% set stock_disponible = e.total_real - e.total_asignado %}
             <tr
                 style="{{ 'background:rgba(215, 0, 0, 0.1);' if e.danado else ('opacity:0.6; background:rgba(255,0,0,0.05);' if disp == 0) }}">
                 <td data-label="Equipo">
@@ -183,20 +195,32 @@
                     <small style="color:var(--text-dim)">{{ e.marca }}</small>
                 </td>
                 <td data-label="Categoría"><span class="badge">{{ e.categoria }}</span></td>
-                <td data-label="Total" style="font-family: 'JetBrains Mono';">{{ e.cantidad_total }}</td>
+                <td data-label="Total" style="font-family: 'JetBrains Mono';">{{ e.total_real }}</td>
                 <td data-label="En Uso" style="color:var(--orange); font-family: 'JetBrains Mono'; font-weight:bold;">{{
-                    e.cantidad_en_uso }}</td>
+                    e.uso_real }}</td>
                 <td data-label="Disponible"
-                    style="font-family: 'JetBrains Mono'; font-weight: bold; color: {{ '#00ff88' if disp > 0 else '#ff4444' }}">
-                    [{{ disp }}]
+                    style="font-family: 'JetBrains Mono'; font-weight: bold; color: {{ '#00ff88' if stock_disponible > 0 else '#ff4444' }}">
+                    <div style="display: flex; flex-direction: column; align-items: center;">
+                        <span style="font-size: 1.1rem; color: #00ff88;">{{ stock_disponible }} / {{ e.total_real
+                            }}</span>
+                        <small
+                            style="color: var(--text-dim); font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px;">EN
+                            STOCK
+                            / TOTAL</small>
+                    </div>
                 </td>
                 <td data-label="Movimiento">
                     <form method="POST" style="display:flex; flex-direction: column; gap:10px; min-width: 220px;">
                         <div style="display:flex; gap:8px;">
                             <input type="number" name="cant_lote" value="1" min="1" title="Cantidad"
                                 style="width:60px; text-align: center; height: 38px;" required>
-                            <input type="text" name="donde" list="list-ubicaciones" placeholder="¿Dónde?"
-                                style="flex:1; height: 38px; font-size:0.8rem;" required>
+                            <select name="donde" style="flex:1; height: 38px; font-size:0.8rem;" required
+                                autocomplete="off">
+                                <option value="" disabled selected>¿Dónde?</option>
+                                {% for urb in ubicaciones %}
+                                <option value="{{ urb }}">{{ urb }}</option>
+                                {% endfor %}
+                            </select>
                         </div>
 
                         <div style="display:flex; flex-direction: column; gap:10px;">
@@ -218,6 +242,11 @@
                                     <option value="Dañado">⚠️ DAÑADO</option>
                                 </select>
                             </div>
+                            <button type="submit" formaction="/movimiento/{{ e.id }}/transferir" class="btn-outline"
+                                style="color:var(--orange); border-color:var(--orange); padding: 10px; font-size: 0.75rem; margin-top: 5px;"
+                                {{ 'disabled' if e.cantidad_en_uso==0 }}>
+                                ⇄ CAMBIAR LUGAR (TRANSFERIR)
+                            </button>
                         </div>
                     </form>
                 </td>
@@ -235,9 +264,5 @@
     </table>
 </div>
 
-<datalist id="list-ubicaciones">
-    {% for urb in ubicaciones %}
-    <option value="{{ urb }}">
-        {% endfor %}
-</datalist>
+
 {% endblock %}

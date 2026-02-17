@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+    <h1>GESTIÓN DE LUGARES</h1>
+</div>
+
+<div class="card" style="margin-bottom: 30px; border-top: 4px solid var(--orange);">
+    <h3 style="margin-top: 0; color: var(--orange);">LUGARES REGISTRADOS</h3>
+    <p style="color: var(--text-dim); margin-bottom: 20px;">
+        Aquí puedes ver y eliminar los lugares que se han añadido al sistema.
+        Ten en cuenta que borrar un lugar no borrará el historial de movimientos, pero ya no aparecerá en las opciones
+        de búsqueda ni de registro.
+    </p>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>NOMBRE DEL LUGAR</th>
+                    <th style="text-align: right;">ACCIONES</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for lugar in lugares %}
+                <tr>
+                    <td data-label="Nombre">
+                        <span style="font-weight: 700; font-size: 1.1rem;">{{ lugar.nombre }}</span>
+                    </td>
+                    <td style="text-align: right;">
+                        <form action="/lugar/delete/{{ lugar.id }}" method="POST" style="display: inline;"
+                            onsubmit="return confirm('¿Estás seguro de que quieres eliminar este lugar?');">
+                            <button type="submit" class="btn-delete" style="padding: 10px 15px;">ELIMINAR</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% if not lugares %}
+                <tr>
+                    <td colspan="2" style="text-align: center; padding: 40px; color: var(--text-dim);">
+                        No hay lugares registrados.
+                    </td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card" style="margin-bottom: 30px; border-top: 4px solid var(--green);">
+    <h3 style="margin-top: 0; color: var(--green);">+ AGREGAR NUEVO LUGAR</h3>
+    <form method="POST" action="/lugares" style="display: flex; gap: 15px; align-items: end;">
+        <div style="flex: 1;">
+            <label style="display: block; margin-bottom: 8px; color: var(--text-dim); font-size: 0.85rem;">
+                NOMBRE DEL LUGAR
+            </label>
+            <input type="text" name="nombre" required style="width: 100%;" placeholder="Ej: SALA DE ENSAYOS">
+        </div>
+        <button type="submit" class="btn-main" style="padding: 12px 24px;">AGREGAR</button>
+    </form>
+</div>
+
+<div class="card" style="border-top: 4px solid var(--orange);">
+    <h3 style="margin-top: 0; color: var(--orange);">¿CÓMO FUNCIONA?</h3>
+    <p style="color: var(--text-dim);">
+        Ahora los lugares se deben agregar manualmente desde esta página. Esto evita que errores de tipeo al registrar
+        salidas o transferencias ensucien la lista de opciones.
+    </p>
+</div>
+
+{% endblock %}

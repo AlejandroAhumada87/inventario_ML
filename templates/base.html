@@ -37,6 +37,10 @@
             class="nav-icon">🔍</span><span>BUSCADOR</span></a>
         <a href="/historial" class="{{ 'active' if request.path == '/historial' }}"><span
             class="nav-icon">📜</span><span>HISTORIAL</span></a>
+        <a href="/lugares" class="{{ 'active' if request.path == '/lugares' }}"><span
+            class="nav-icon">📍</span><span>LUGARES</span></a>
+        <a href="/sincronizar" class="{{ 'active' if request.path == '/sincronizar' }}" style="border: 1px solid var(--orange); color: var(--orange);"><span
+            class="nav-icon">🔄</span><span>SYNC</span></a>
       </div>
     </div>
 
@@ -62,6 +66,32 @@
     {% endwith %}
     {% block content %}{% endblock %}
   </div>
+
+
+
+  <script>
+    // Restaurar posición del scroll después de recargar la página
+    document.addEventListener('DOMContentLoaded', function () {
+      const scrollPos = sessionStorage.getItem('scrollPosition');
+      const scrollPath = sessionStorage.getItem('scrollPath');
+
+      if (scrollPos && scrollPath === window.location.pathname) {
+        window.scrollTo({
+          top: parseInt(scrollPos),
+          behavior: 'instant'
+        });
+      }
+      // Limpiamos después de intentar restaurar
+      sessionStorage.removeItem('scrollPosition');
+      sessionStorage.removeItem('scrollPath');
+    });
+
+    // Guardar posición antes de enviar cualquier formulario
+    window.addEventListener('submit', function () {
+      sessionStorage.setItem('scrollPosition', window.scrollY);
+      sessionStorage.setItem('scrollPath', window.location.pathname);
+    });
+  </script>
 </body>
 
 </html>

@@ -7,6 +7,10 @@ from io import BytesIO
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
+import subprocess
+import json
+import requests
+
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "media_lighting_secret_key") # Usar variable de entorno en producción
@@ -52,7 +56,46 @@ class Equipo(db.Model):
     gestion_individual = db.Column(db.Boolean, default=False) # True para equipos que se gestionan individualmente (ej: Luminarias)
     movimientos = db.relationship('Historial', backref='equipo', cascade="all, delete-orphan")
     documentos = db.relationship('Documento', backref='equipo', cascade="all, delete-orphan")
+    stocks_por_lugar = db.relationship('StockLugar', backref='equipo', cascade="all, delete-orphan")
     
+    @property
+    def total_real(self):
+        """Devuelve la cantidad total, ya sea del campo directo o contando unidades individuales"""
+        if self.gestion_individual and self.equipos_individuales:
+            return len(self.equipos_individuales)
+        return self.cantidad_total or 0
+
+        if self.gestion_individual and self.equipos_individuales:
+            return sum(1 for ind in self.equipos_individuales if ind.en_uso)
+        return self.cantidad_en_uso or 0
+
+    @property
+    def total_asignado(self):
+        """Suma de todas las cantidades asignadas a ubicaciones fijas"""
+        if not self.stocks_por_lugar:
+            return 0
+        return sum((s.cantidad or 0) for s in self.stocks_por_lugar)
+
+    @property
+    def cantidad_disponible(self):
+        """Cantidad que realmente queda en bodega (Total Real - En Uso Real - Asignado)"""
+        return self.total_real - self.uso_real - self.total_asignado
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'nombre': self.nombre,
+            'categoria': self.categoria,
+            'marca': self.marca,
+            'cantidad_total': self.cantidad_total,
+            'cantidad_en_uso': self.cantidad_en_uso,
+            'fecha_ingreso': self.fecha_ingreso,
+            'observaciones': self.observaciones,
+            'danado': self.danado,
+            'manual_filename': self.manual_filename,
+            'gestion_individual': self.gestion_individual
+        }
+
     # Relación de compatibilidad (Muchos a Muchos)
     compatibles = db.relationship(
         'Equipo', 
@@ -61,6 +104,7 @@ class Equipo(db.Model):
         secondaryjoin='Equipo.id==compatibilidad.c.compatible_id',
         backref='es_compatible_con'
     )
+
 
 # Tabla de asociación para compatibilidad
 compatibilidad = db.Table('compatibilidad',
@@ -79,6 +123,20 @@ class Historial(db.Model):
     fecha = db.Column(db.DateTime, default=datetime.now)
     equipo_individual_id = db.Column(db.Integer, db.ForeignKey('equipo_individual.id'), nullable=True) # Vinculación opcional con equipo individual
 
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'equipo_id': self.equipo_id,
+            'tipo': self.tipo,
+            'usuario': self.usuario,
+            'cantidad': self.cantidad,
+            'observaciones': self.observaciones,
+            'estado_al_retorno': self.estado_al_retorno,
+            'fecha': self.fecha.isoformat() if self.fecha else None,
+            'equipo_individual_id': self.equipo_individual_id
+        }
+
+
 # Tabla de asociación para Equipo - Repuesto
 equipo_repuesto = db.Table('equipo_repuesto',
     db.Column('equipo_id', db.Integer, db.ForeignKey('equipo.id'), primary_key=True),
@@ -96,11 +154,31 @@ class Repuesto(db.Model):
     # Relación con Equipos (Luminarias u otros)
     equipos = db.relationship('Equipo', secondary=equipo_repuesto, backref=db.backref('repuestos_asociados'))
 
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'nombre': self.nombre,
+            'marca': self.marca,
+            'categoria': self.categoria,
+            'cantidad': self.cantidad,
+            'equipo_asociado_texto': self.equipo_asociado_texto
+        }
+
+
 class Documento(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     equipo_id = db.Column(db.Integer, db.ForeignKey('equipo.id'), nullable=False)
     filename = db.Column(db.String(200), nullable=False)
     nombre_referencial = db.Column(db.String(100), nullable=False)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'equipo_id': self.equipo_id,
+            'filename': self.filename,
+            'nombre_referencial': self.nombre_referencial
+        }
+
 
 class EquipoIndividual(db.Model):
     """Modelo para gestión individual de equipos (principalmente Luminarias)"""
@@ -119,10 +197,56 @@ class EquipoIndividual(db.Model):
     # Relación con historial
     movimientos = db.relationship('Historial', backref='equipo_individual', foreign_keys='Historial.equipo_individual_id')
 
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'equipo_grupo_id': self.equipo_grupo_id,
+            'numero_serie': self.numero_serie,
+            'numero_fixture': self.numero_fixture,
+            'danado': self.danado,
+            'observaciones_individuales': self.observaciones_individuales,
+            'fecha_ingreso': self.fecha_ingreso,
+            'en_uso': self.en_uso,
+            'ubicacion_actual': self.ubicacion_actual
+        }
+
+
 class Usuario(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
     password_hash = db.Column(db.String(200), nullable=False)
+
+class Lugar(db.Model):
+    """Modelo para gestionar ubicaciones fijas/predefinidas"""
+    id = db.Column(db.Integer, primary_key=True)
+    nombre = db.Column(db.String(100), unique=True, nullable=False)
+    stocks = db.relationship('StockLugar', backref='lugar', cascade="all, delete-orphan")
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'nombre': self.nombre
+        }
+
+
+class StockLugar(db.Model):
+    """Modelo para rastrear cantidades de equipos en lugares específicos"""
+    id = db.Column(db.Integer, primary_key=True)
+    equipo_id = db.Column(db.Integer, db.ForeignKey('equipo.id'), nullable=False)
+    lugar_id = db.Column(db.Integer, db.ForeignKey('lugar.id'), nullable=False)
+    cantidad = db.Column(db.Integer, default=0)
+    
+    # Restricción de unicidad para evitar duplicados del mismo equipo en el mismo lugar
+    __table_args__ = (db.UniqueConstraint('equipo_id', 'lugar_id', name='_equipo_lugar_uc'),)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'equipo_id': self.equipo_id,
+            'lugar_id': self.lugar_id,
+            'cantidad': self.cantidad
+        }
+
 
 def login_required(f):
     @wraps(f)
@@ -141,6 +265,15 @@ with app.app_context():
         admin = Usuario(username="MLProducciones", password_hash=hashed_pw)
         db.session.add(admin)
         db.session.commit()
+    
+    # Pre-cargar lugares si está vacío
+    if not Lugar.query.first():
+        lugares_default = ["CASA VIP", "CASA SERVICIO", "CASA TEMÁTICA", "CASA PRECARIA"]
+        for nombre in lugares_default:
+            lugar = Lugar(nombre=nombre)
+            db.session.add(lugar)
+        db.session.commit()
+
 
 # --- FUNCIONES AUXILIARES ---
 import shutil
@@ -152,6 +285,27 @@ def realizar_backup():
     backup_path = os.path.join(basedir, 'backups', f'inventario_backup_{timestamp}.db')
     if os.path.exists(db_path):
         shutil.copy2(db_path, backup_path)
+
+def respaldar_en_github():
+    """Ejecuta los comandos de git para respaldar la base de datos"""
+    try:
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        # 1. Git Add
+        subprocess.run(["git", "add", "inventario.db"], check=True, cwd=basedir)
+        
+        # 2. Git Commit
+        subprocess.run(["git", "commit", "-m", f"Sync auto: {timestamp}"], check=True, cwd=basedir)
+        
+        # 3. Git Push
+        subprocess.run(["git", "push", "origin", "main"], check=True, cwd=basedir)
+        
+        print(f"✅ Respaldo en GitHub completado: {timestamp}")
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Error al respaldar en GitHub: {e}")
+        return False
+
 
 @app.route('/')
 def welcome():
@@ -187,9 +341,9 @@ def logout():
 @login_required
 def index():
     equipos = Equipo.query.filter(Equipo.categoria != 'Luminarias').order_by(Equipo.id.desc()).all()
-    # Obtener lista única de ubicaciones/destinos para el filtro
-    ubicaciones = db.session.query(Historial.usuario).distinct().all()
-    ubicaciones = sorted([u[0] for u in ubicaciones if u[0]])
+    # Obtener lista de lugares de la tabla Lugar
+    lugares = Lugar.query.order_by(Lugar.nombre).all()
+    ubicaciones = [l.nombre for l in lugares]
     return render_template('index.html', equipos=equipos, categorias=CATEGORIAS, ubicaciones=ubicaciones)
 
 @app.route('/equipo/<int:id>')
@@ -201,7 +355,7 @@ def detalle_equipo(id):
     if e.categoria == "Repuestos/Spare":
         luminarias = Equipo.query.filter_by(categoria="Luminarias").order_by(Equipo.nombre).all()
     
-    return render_template('detalle.html', e=e, categorias=CATEGORIAS, luminarias=luminarias)
+    return render_template('detalle.html', e=e, categorias=CATEGORIAS, luminarias=luminarias, lugares=Lugar.query.order_by(Lugar.nombre).all())
 
 @app.route('/equipo/<int:id>/update', methods=['POST'])
 @login_required
@@ -251,6 +405,12 @@ def movimiento(id, tipo):
     e = Equipo.query.get_or_404(id)
     # Cambiado de 'usuario' a 'donde' (ubicación física)
     ubicacion = request.form.get('donde', 'Sin Destino').strip() or "Sin Destino"
+    
+    # Ya no agregamos lugares automáticamente
+    # Si la ubicación no existe en la tabla Lugar, simplemente la usamos para el historial
+    # pero no la guardamos como una opción para el futuro.
+    # Esto evita que errores de tipeo se guarden permanentemente.
+            
     obs_movimiento = request.form.get('observaciones_movimiento', '').strip()
     
     try:
@@ -262,7 +422,7 @@ def movimiento(id, tipo):
         cant_lote = 1
     
     if tipo == 'prestar':
-        disponible = e.cantidad_total - e.cantidad_en_uso
+        disponible = e.cantidad_disponible
         if cant_lote <= disponible: 
             ind_id = request.form.get('ind_id', type=int)
             e.cantidad_en_uso += cant_lote
@@ -324,6 +484,59 @@ def movimiento(id, tipo):
     
     db.session.commit()
     realizar_backup() # Sistema de Backup Automático
+    return redirect(request.referrer or url_for('index'))
+
+@app.route('/movimiento/<int:id>/transferir', methods=['POST'])
+@login_required
+def transferir(id):
+    e = Equipo.query.get_or_404(id)
+    nueva_ubicacion = request.form.get('donde', 'Sin Destino').strip() or "Sin Destino"
+    ind_id = request.form.get('ind_id', type=int)
+    
+    # Ya no agregamos lugares automáticamente
+    
+    # Obtener el historial más reciente para saber de dónde viene
+    if ind_id:
+        # Para equipo individual
+        ind = EquipoIndividual.query.get(ind_id)
+        if not ind or not ind.en_uso:
+            flash("El equipo no está en uso.", "error")
+            return redirect(request.referrer or url_for('index'))
+        
+        antigua_ubicacion = ind.ubicacion_actual
+        ind.ubicacion_actual = nueva_ubicacion
+        
+        nuevo_h = Historial(
+            equipo_id=id,
+            tipo='TRANSFERENCIA',
+            usuario=nueva_ubicacion,
+            cantidad=1,
+            observaciones=f"Transferido desde {antigua_ubicacion}. " + request.form.get('observaciones_movimiento', ''),
+            equipo_individual_id=ind_id
+        )
+        db.session.add(nuevo_h)
+    else:
+        # Para equipo por lote
+        try:
+            cant = int(request.form.get('cant_lote') or 1)
+        except ValueError:
+            cant = 1
+            
+        if cant > e.cantidad_en_uso:
+            flash(f"Error: Solo hay {e.cantidad_en_uso} en terreno.", "error")
+            return redirect(request.referrer or url_for('index'))
+            
+        nuevo_h = Historial(
+            equipo_id=id,
+            tipo='TRANSFERENCIA',
+            usuario=nueva_ubicacion,
+            cantidad=cant,
+            observaciones=f"Transferencia de lote. " + request.form.get('observaciones_movimiento', '')
+        )
+        db.session.add(nuevo_h)
+        
+    db.session.commit()
+    flash(f"Transferencia a {nueva_ubicacion} registrada.", "info")
     return redirect(request.referrer or url_for('index'))
 
 @app.route('/equipo/<int:id>/add_documento', methods=['POST'])
@@ -429,7 +642,7 @@ def exportar_excel():
             "Categoría": e.categoria,
             "Total": e.cantidad_total,
             "En Uso": e.cantidad_en_uso,
-            "Disponible": e.cantidad_total - e.cantidad_en_uso,
+            "Disponible": e.cantidad_disponible,
             "Fecha Ingreso": e.fecha_ingreso
         })
     df = pd.DataFrame(data)
@@ -485,9 +698,9 @@ def mostrar_historial():
 @login_required
 def buscar():
     equipos = Equipo.query.order_by(Equipo.nombre.asc()).all()
-    # También pasamos ubicaciones para filtrar en el buscador
-    ubicaciones = db.session.query(Historial.usuario).distinct().all()
-    ubicaciones = sorted([u[0] for u in ubicaciones if u[0]])
+    # Obtener lista de lugares de la tabla Lugar
+    lugares = Lugar.query.order_by(Lugar.nombre).all()
+    ubicaciones = [l.nombre for l in lugares]
     return render_template('buscar.html', equipos=equipos, categorias=CATEGORIAS, ubicaciones=ubicaciones)
 
 
@@ -495,11 +708,6 @@ def buscar():
 @login_required
 def luminarias():
     equipos = Equipo.query.filter_by(categoria='Luminarias').order_by(Equipo.nombre.asc()).all()
-    # Calcular cantidades reales basadas en individuales si existen
-    for e in equipos:
-        if e.equipos_individuales:
-            e.cantidad_total = len(e.equipos_individuales)
-            e.cantidad_en_uso = sum(1 for ind in e.equipos_individuales if ind.en_uso)
     return render_template('luminarias.html', equipos=equipos)
 
 # --- RUTAS DE REPUESTOS ---
@@ -617,9 +825,9 @@ def gestion_individual(id):
     en_uso = sum(1 for e in equipo_grupo.equipos_individuales if e.en_uso)
     danados = sum(1 for e in equipo_grupo.equipos_individuales if e.danado)
     
-    # Obtener ubicaciones para el datalist
-    ubicaciones = db.session.query(Historial.usuario).distinct().all()
-    ubicaciones = sorted([u[0] for u in ubicaciones if u[0]])
+    # Obtener lugares para el datalist
+    lugares = Lugar.query.order_by(Lugar.nombre).all()
+    ubicaciones = [l.nombre for l in lugares]
 
     return render_template('gestion_individual.html', 
                          equipo_grupo=equipo_grupo,
@@ -693,6 +901,170 @@ def toggle_danado_individual(id, ind_id):
     db.session.commit()
     
     estado = "DAÑADO" if equipo_ind.danado else "OPERATIVO"
+    
+# --- RUTAS DE SINCRONIZACIÓN ---
+
+@app.route('/exportar_sync', methods=['GET'])
+def exportar_sync():
+    """Exporta toda la base de datos en formato JSON"""
+    try:
+        data = {
+            'equipos': [e.to_dict() for e in Equipo.query.all()],
+            'equipos_individuales': [ei.to_dict() for ei in EquipoIndividual.query.all()],
+            'historial': [h.to_dict() for h in Historial.query.all()],
+            'lugares': [l.to_dict() for l in Lugar.query.all()],
+            'stock_lugares': [s.to_dict() for s in StockLugar.query.all()],
+            'repuestos': [r.to_dict() for r in Repuesto.query.all()],
+            'documentos': [d.to_dict() for d in Documento.query.all()]
+        }
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+from flask import jsonify 
+
+@app.route('/import_sync', methods=['POST'])
+def import_sync():
+    """Importa datos JSON y los fusiona con la base de datos local"""
+    try:
+        data = request.json
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+            
+        # 1. Lugares (Prioridad baja, pero necesario para StockLugar)
+        for item in data.get('lugares', []):
+            l = Lugar.query.get(item['id'])
+            if not l:
+                l = Lugar(id=item['id'])
+            l.nombre = item['nombre']
+            db.session.merge(l)
+            
+        # 2. Equipos (Prioridad Alta)
+        for item in data.get('equipos', []):
+            e = Equipo.query.get(item['id'])
+            if not e:
+                e = Equipo(id=item['id'])
+            
+            e.nombre = item.get('nombre')
+            e.categoria = item.get('categoria')
+            e.marca = item.get('marca')
+            e.cantidad_total = item.get('cantidad_total')
+            e.cantidad_en_uso = item.get('cantidad_en_uso')
+            e.fecha_ingreso = item.get('fecha_ingreso')
+            e.observaciones = item.get('observaciones')
+            e.danado = item.get('danado')
+            e.manual_filename = item.get('manual_filename')
+            e.gestion_individual = item.get('gestion_individual')
+
+            
+            db.session.merge(e)
+        
+        # 3. Equipos Individuales
+        for item in data.get('equipos_individuales', []):
+            ei = EquipoIndividual.query.get(item['id'])
+            if not ei:
+                ei = EquipoIndividual(id=item['id'])
+            
+            ei.equipo_grupo_id = item.get('equipo_grupo_id')
+            ei.numero_serie = item.get('numero_serie')
+            ei.numero_fixture = item.get('numero_fixture')
+            ei.danado = item.get('danado')
+            ei.observaciones_individuales = item.get('observaciones_individuales')
+            ei.fecha_ingreso = item.get('fecha_ingreso')
+            ei.en_uso = item.get('en_uso')
+            ei.ubicacion_actual = item.get('ubicacion_actual')
+
+            
+            db.session.merge(ei)
+
+        # 4. Historial
+        for item in data.get('historial', []):
+            h = Historial.query.get(item['id'])
+            if not h:
+                h = Historial(id=item['id'])
+            
+            h.equipo_id = item.get('equipo_id')
+            h.tipo = item.get('tipo')
+            h.usuario = item.get('usuario')
+            h.cantidad = item.get('cantidad')
+            h.observaciones = item.get('observaciones')
+            h.estado_al_retorno = item.get('estado_al_retorno')
+            # Convertir string ISO a datetime si es necesario, 
+            # pero SQLite suele manejar strings. Si 'fecha' es DateTime en modelo 
+            # y recibimos ISO string, hay que parsear.
+            if item.get('fecha'):
+                try:
+                    h.fecha = datetime.fromisoformat(item.get('fecha'))
+
+                except ValueError:
+                    pass # Keep original or handle error if needed
+            
+            h.equipo_individual_id = item.get('equipo_individual_id')
+
+            
+            db.session.merge(h)
+            
+        # 5. Repuestos
+        for item in data.get('repuestos', []):
+            r = Repuesto.query.get(item['id'])
+            if not r:
+                r = Repuesto(id=item['id'])
+            
+            r.nombre = item.get('nombre')
+            r.marca = item.get('marca')
+            r.categoria = item.get('categoria')
+            r.cantidad = item.get('cantidad')
+            r.equipo_asociado_texto = item.get('equipo_asociado_texto')
+
+            
+            db.session.merge(r)
+
+        # 6. Documentos
+        for item in data.get('documentos', []):
+            d = Documento.query.get(item['id'])
+            if not d:
+                d = Documento(id=item['id'])
+            
+            d.equipo_id = item.get('equipo_id')
+            d.filename = item.get('filename')
+            d.nombre_referencial = item.get('nombre_referencial')
+
+            
+            db.session.merge(d)
+
+        # 7. StockLugar
+        for item in data.get('stock_lugares', []):
+            s = StockLugar.query.get(item['id'])
+            if not s:
+                s = StockLugar(id=item['id'])
+                
+            s.equipo_id = item.get('equipo_id')
+            s.lugar_id = item.get('lugar_id')
+            s.cantidad = item.get('cantidad')
+
+            
+            db.session.merge(s)
+            
+        db.session.commit()
+        
+        # Trigger Backup
+        try:
+            respaldar_en_github()
+        except Exception as e:
+            print(f"Backup warning: {e}")
+            
+        return jsonify({'status': 'success', 'message': 'Sincronización completada y respaldo iniciado.'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/sincronizar')
+@login_required
+def sincronizar_ui():
+    """Interfaz gráfica para la sincronización"""
+    return render_template('sincronizar.html')
+
     flash(f"Equipo #{equipo_ind.numero_fixture} marcado como {estado}.", "success")
     return redirect(url_for('gestion_individual', id=id))
 
@@ -712,6 +1084,80 @@ def delete_individual(id, ind_id):
     flash(f"Equipo #{numero} eliminado.", "warning")
     return redirect(url_for('gestion_individual', id=id))
 
+# --- RUTAS DE LUGARES ---
+
+@app.route('/lugares', methods=['GET', 'POST'])
+@login_required
+def gestionar_lugares():
+    if request.method == 'POST':
+        nombre = request.form.get('nombre', '').strip()
+        if nombre:
+            # Verificar si ya existe
+            existe = Lugar.query.filter(db.func.lower(Lugar.nombre) == nombre.lower()).first()
+            if not existe:
+                nuevo = Lugar(nombre=nombre)
+                db.session.add(nuevo)
+                db.session.commit()
+                flash(f"Lugar '{nombre}' agregado correctamente.", "success")
+            else:
+                flash(f"El lugar '{nombre}' ya existe.", "warning")
+        return redirect(url_for('gestionar_lugares'))
+
+    lugares = Lugar.query.order_by(Lugar.nombre).all()
+    return render_template('lugares.html', lugares=lugares)
+
+@app.route('/lugar/delete/<int:id>', methods=['POST'])
+@login_required
+def delete_lugar(id):
+    lugar = Lugar.query.get_or_404(id)
+    nombre = lugar.nombre
+    
+    # Opcional: Verificar si hay equipos en este lugar antes de borrar?
+    # El usuario pidió borrar "CASA TEMATICA" porque no tiene contenido.
+    
+    db.session.delete(lugar)
+    db.session.commit()
+    flash(f"Lugar '{nombre}' eliminado correctamente.", "success")
+    return redirect(url_for('gestionar_lugares'))
+
+@app.route('/equipo/<int:id>/asignar_stock', methods=['POST'])
+@login_required
+def asignar_stock_lugar(id):
+    equipo = Equipo.query.get_or_404(id)
+    lugar_id = request.form.get('lugar_id', type=int)
+    try:
+        cantidad = int(request.form.get('cantidad', 0))
+    except ValueError:
+        cantidad = 0
+        
+    if not lugar_id:
+        flash("Debe seleccionar un lugar.", "error")
+        return redirect(url_for('detalle_equipo', id=id))
+
+    # Buscar si ya existe asignación para este equipo en este lugar
+    stock = StockLugar.query.filter_by(equipo_id=id, lugar_id=lugar_id).first()
+    
+    if stock:
+        stock.cantidad = cantidad
+    else:
+        stock = StockLugar(equipo_id=id, lugar_id=lugar_id, cantidad=cantidad)
+        db.session.add(stock)
+        
+    db.session.commit()
+    flash(f"Stock actualizado para el lugar seleccionado.", "success")
+    return redirect(url_for('detalle_equipo', id=id))
+
+@app.route('/equipo/<int:id>/eliminar_stock/<int:stock_id>', methods=['POST'])
+@login_required
+def eliminar_stock_lugar(id, stock_id):
+    stock = StockLugar.query.get_or_404(stock_id)
+    if stock.equipo_id == id:
+        db.session.delete(stock)
+        db.session.commit()
+        flash("Asignación de stock eliminada.", "success")
+    return redirect(url_for('detalle_equipo', id=id))
+
 
 if __name__ == '__main__':
+    # Configuración para permitir acceso desde la red local
     app.run(debug=True, host='0.0.0.0', port=5000)
