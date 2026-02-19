@@ -199,9 +199,9 @@
                 <td data-label="En Uso" style="color:var(--orange); font-family: 'JetBrains Mono'; font-weight:bold;">{{
                     e.uso_real }}</td>
                 <td data-label="Disponible"
-                    style="font-family: 'JetBrains Mono'; font-weight: bold; color: {{ '#00ff88' if stock_disponible > 0 else '#ff4444' }}">
+                    style="font-family: 'JetBrains Mono'; font-weight: bold; color: {{ '#00ff88' if e.cantidad_disponible > 0 else '#ff4444' }}">
                     <div style="display: flex; flex-direction: column; align-items: center;">
-                        <span style="font-size: 1.1rem; color: #00ff88;">{{ stock_disponible }} / {{ e.total_real
+                        <span style="font-size: 1.1rem; color: #00ff88;">{{ e.cantidad_disponible }} / {{ e.total_real
                             }}</span>
                         <small
                             style="color: var(--text-dim); font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px;">EN

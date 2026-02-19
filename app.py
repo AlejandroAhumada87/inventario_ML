@@ -1,5 +1,6 @@
-from flask import Flask, render_template, request, redirect, url_for, send_from_directory, flash, Response, session
+from flask import Flask, render_template, request, redirect, url_for, send_from_directory, flash, Response, session, jsonify
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import text
 from datetime import datetime
 import os
 import pandas as pd
@@ -64,7 +65,9 @@ class Equipo(db.Model):
         if self.gestion_individual and self.equipos_individuales:
             return len(self.equipos_individuales)
         return self.cantidad_total or 0
-
+    @property
+    def uso_real(self):
+        """Devuelve la cantidad en uso real (campo directo o contando)"""
         if self.gestion_individual and self.equipos_individuales:
             return sum(1 for ind in self.equipos_individuales if ind.en_uso)
         return self.cantidad_en_uso or 0
@@ -132,7 +135,7 @@ class Historial(db.Model):
             'cantidad': self.cantidad,
             'observaciones': self.observaciones,
             'estado_al_retorno': self.estado_al_retorno,
-            'fecha': self.fecha.isoformat() if self.fecha else None,
+            'fecha': self.fecha.isoformat() if (self.fecha and hasattr(self.fecha, 'isoformat')) else (str(self.fecha) if self.fecha else None),
             'equipo_individual_id': self.equipo_individual_id
         }
 
@@ -283,8 +286,13 @@ def realizar_backup():
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     db_path = os.path.join(basedir, 'inventario.db')
     backup_path = os.path.join(basedir, 'backups', f'inventario_backup_{timestamp}.db')
-    if os.path.exists(db_path):
-        shutil.copy2(db_path, backup_path)
+    try:
+        # SQLite safer backup using VACUUM INTO
+        db.session.execute(text(f"VACUUM INTO '{backup_path}'"))
+    except Exception as e:
+        # Fallback to copy if VACUUM INTO fails (e.g. file exists) or older sqlite
+        if os.path.exists(db_path):
+            shutil.copy2(db_path, backup_path)
 
 def respaldar_en_github():
     """Ejecuta los comandos de git para respaldar la base de datos"""
@@ -670,7 +678,7 @@ def exportar_movimientos():
     data = []
     for h in registros:
         data.append({
-            "Fecha": h.fecha.strftime("%Y-%m-%d %H:%M"),
+            "Fecha": h.fecha.strftime("%Y-%m-%d %H:%M") if (h.fecha and hasattr(h.fecha, 'strftime')) else str(h.fecha or ""),
             "Equipo": h.equipo.nombre if h.equipo else "Unknown",
             "Tipo": h.tipo,
             "Cantidad": h.cantidad,
@@ -901,10 +909,13 @@ def toggle_danado_individual(id, ind_id):
     db.session.commit()
     
     estado = "DAÑADO" if equipo_ind.danado else "OPERATIVO"
-    
+    flash(f"Equipo #{equipo_ind.numero_fixture} marcado como {estado}.", "success")
+    return redirect(url_for('gestion_individual', id=id))
+
 # --- RUTAS DE SINCRONIZACIÓN ---
 
 @app.route('/exportar_sync', methods=['GET'])
+@login_required
 def exportar_sync():
     """Exporta toda la base de datos en formato JSON"""
     try:
@@ -921,18 +932,30 @@ def exportar_sync():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-from flask import jsonify 
 
 @app.route('/import_sync', methods=['POST'])
+@login_required
 def import_sync():
-    """Importa datos JSON y los fusiona con la base de datos local"""
+    """Importa datos JSON y los fusiona con la base de datos local (Vía API/Red)"""
     try:
         data = request.json
         if not data:
             return jsonify({'error': 'No data provided'}), 400
             
-        # 1. Lugares (Prioridad baja, pero necesario para StockLugar)
+        result = procesar_importacion_datos(data)
+        if result.get('error'):
+            return jsonify(result), 500
+            
+        return jsonify({'status': 'success', 'message': 'Sincronización completada y respaldo iniciado.'})
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+def procesar_importacion_datos(data):
+    """Lógica central para procesar la fusión de datos JSON"""
+    try:
         for item in data.get('lugares', []):
+            if not item.get('id'): continue
             l = Lugar.query.get(item['id'])
             if not l:
                 l = Lugar(id=item['id'])
@@ -1053,20 +1076,75 @@ def import_sync():
         except Exception as e:
             print(f"Backup warning: {e}")
             
-        return jsonify({'status': 'success', 'message': 'Sincronización completada y respaldo iniciado.'})
+        return {'status': 'success'}
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return {'error': str(e)}
+
+@app.route('/exportar_json_file')
+@login_required
+def exportar_json_file():
+    """Genera un archivo JSON para descargar con todos los datos"""
+    try:
+        data = {
+            'equipos': [e.to_dict() for e in Equipo.query.all()],
+            'equipos_individuales': [ei.to_dict() for ei in EquipoIndividual.query.all()],
+            'historial': [h.to_dict() for h in Historial.query.all()],
+            'lugares': [l.to_dict() for l in Lugar.query.all()],
+            'stock_lugares': [s.to_dict() for s in StockLugar.query.all()],
+            'repuestos': [r.to_dict() for r in Repuesto.query.all()],
+            'documentos': [d.to_dict() for d in Documento.query.all()]
+        }
+        
+        json_content = json.dumps(data, indent=4, ensure_ascii=False)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"inventario_sync_{timestamp}.json"
+        
+        return Response(
+            json_content,
+            mimetype="application/json",
+            headers={"Content-disposition": f"attachment; filename={filename}"}
+        )
+    except Exception as e:
+        flash(f"Error al exportar: {e}", "error")
+        return redirect(url_for('sincronizar_ui'))
+
+@app.route('/importar_json_file', methods=['POST'])
+@login_required
+def importar_json_file():
+    """Recibe un archivo JSON y fusiona los datos"""
+    if 'archivo_json' not in request.files:
+        flash("No se seleccionó ningún archivo.", "error")
+        return redirect(url_for('sincronizar_ui'))
+    
+    file = request.files['archivo_json']
+    if file.filename == '':
+        flash("Archivo sin nombre.", "error")
+        return redirect(url_for('sincronizar_ui'))
+    
+    if file:
+        try:
+            data = json.load(file)
+            result = procesar_importacion_datos(data)
+            
+            if result.get('error'):
+                flash(f"Error en importación: {result['error']}", "error")
+            else:
+                flash("Datos sincronizados correctamente desde el archivo.", "success")
+                
+        except json.JSONDecodeError:
+            flash("El archivo no es un JSON válido.", "error")
+        except Exception as e:
+            flash(f"Error inesperado: {e}", "error")
+            
+    return redirect(url_for('sincronizar_ui'))
 
 @app.route('/sincronizar')
 @login_required
 def sincronizar_ui():
     """Interfaz gráfica para la sincronización"""
     return render_template('sincronizar.html')
-
-    flash(f"Equipo #{equipo_ind.numero_fixture} marcado como {estado}.", "success")
-    return redirect(url_for('gestion_individual', id=id))
 
 @app.route('/equipo/<int:id>/individual/<int:ind_id>/delete', methods=['POST'])
 @login_required

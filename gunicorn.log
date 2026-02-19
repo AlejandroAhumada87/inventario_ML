@@ -1,0 +1,205 @@
+nohup: ignoring input
+[2026-02-19 15:10:24 -0300] [12943] [INFO] Starting gunicorn 23.0.0
+[2026-02-19 15:10:24 -0300] [12943] [INFO] Listening at: http://0.0.0.0:5000 (12943)
+[2026-02-19 15:10:24 -0300] [12943] [INFO] Using worker: sync
+[2026-02-19 15:10:24 -0300] [12945] [INFO] Booting worker with pid: 12945
+[2026-02-19 15:10:24 -0300] [12946] [INFO] Booting worker with pid: 12946
+[2026-02-19 15:10:24 -0300] [12947] [INFO] Booting worker with pid: 12947
+[2026-02-19 15:25:57 -0300] [12943] [INFO] Handling signal: hup
+[2026-02-19 15:25:57 -0300] [12943] [INFO] Hang up: Master
+[2026-02-19 15:25:57 -0300] [12943] [ERROR] Worker (pid:12945) was sent SIGHUP!
+[2026-02-19 15:25:57 -0300] [12943] [ERROR] Worker (pid:12947) was sent SIGHUP!
+[2026-02-19 15:25:57 -0300] [12943] [ERROR] Worker (pid:12946) was sent SIGHUP!
+[2026-02-19 15:25:57 -0300] [13433] [INFO] Booting worker with pid: 13433
+[2026-02-19 15:25:57 -0300] [13434] [INFO] Booting worker with pid: 13434
+[2026-02-19 15:25:57 -0300] [13435] [INFO] Booting worker with pid: 13435
+[2026-02-19 17:26:35,631] ERROR in app: Exception on /sincronizar [GET]
+Traceback (most recent call last):
+  File "/home/alejandroahu/inventario_ML/venv/lib/python3.11/site-packages/flask/app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/alejandroahu/inventario_ML/venv/lib/python3.11/site-packages/flask/app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/alejandroahu/inventario_ML/venv/lib/python3.11/site-packages/flask/app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/alejandroahu/inventario_ML/venv/lib/python3.11/site-packages/flask/app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/alejandroahu/inventario_ML/app.py", line 260, in decorated_function
+    return f(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^
+  File "/home/alejandroahu/inventario_ML/app.py", line 1078, in sincronizar_ui
+  File "/home/alejandroahu/inventario_ML/venv/lib/python3.11/site-packages/flask/templating.py", line 150, in render_template
+    return _render(app, template, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/alejandroahu/inventario_ML/venv/lib/python3.11/site-packages/flask/templating.py", line 131, in _render
+    rv = template.render(context)
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/alejandroahu/inventario_ML/venv/lib/python3.11/site-packages/jinja2/environment.py", line 1295, in render
+    self.environment.handle_exception()
+  File "/home/alejandroahu/inventario_ML/venv/lib/python3.11/site-packages/jinja2/environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "/home/alejandroahu/inventario_ML/templates/sincronizar.html", line 1, in top-level template code
+    {% extends "base.html" %}
+  File "/home/alejandroahu/inventario_ML/templates/base.html", line 67, in top-level template code
+    {% block content %}{% endblock %}
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/alejandroahu/inventario_ML/templates/sincronizar.html", line 19, in block 'content'
+    <a href="{{ url_for('exportar_json_file') }}" class="btn-main"
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/alejandroahu/inventario_ML/venv/lib/python3.11/site-packages/flask/app.py", line 1121, in url_for
+    return self.handle_url_build_error(error, endpoint, values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/alejandroahu/inventario_ML/venv/lib/python3.11/site-packages/flask/app.py", line 1110, in url_for
+    rv = url_adapter.build(  # type: ignore[union-attr]
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/alejandroahu/inventario_ML/venv/lib/python3.11/site-packages/werkzeug/routing/map.py", line 924, in build
+    raise BuildError(endpoint, values, method, self)
+werkzeug.routing.exceptions.BuildError: Could not build url for endpoint 'exportar_json_file'. Did you mean 'exportar_sync' instead?
+[2026-02-19 17:26:38,942] ERROR in app: Exception on /sincronizar [GET]
+Traceback (most recent call last):
+  File "/home/alejandroahu/inventario_ML/venv/lib/python3.11/site-packages/flask/app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/alejandroahu/inventario_ML/venv/lib/python3.11/site-packages/flask/app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/alejandroahu/inventario_ML/venv/lib/python3.11/site-packages/flask/app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/alejandroahu/inventario_ML/venv/lib/python3.11/site-packages/flask/app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/alejandroahu/inventario_ML/app.py", line 260, in decorated_function
+    return f(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^
+  File "/home/alejandroahu/inventario_ML/app.py", line 1078, in sincronizar_ui
+  File "/home/alejandroahu/inventario_ML/venv/lib/python3.11/site-packages/flask/templating.py", line 150, in render_template
+    return _render(app, template, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/alejandroahu/inventario_ML/venv/lib/python3.11/site-packages/flask/templating.py", line 131, in _render
+    rv = template.render(context)
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/alejandroahu/inventario_ML/venv/lib/python3.11/site-packages/jinja2/environment.py", line 1295, in render
+    self.environment.handle_exception()
+  File "/home/alejandroahu/inventario_ML/venv/lib/python3.11/site-packages/jinja2/environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "/home/alejandroahu/inventario_ML/templates/sincronizar.html", line 1, in top-level template code
+    {% extends "base.html" %}
+  File "/home/alejandroahu/inventario_ML/templates/base.html", line 67, in top-level template code
+    {% block content %}{% endblock %}
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/alejandroahu/inventario_ML/templates/sincronizar.html", line 19, in block 'content'
+    <a href="{{ url_for('exportar_json_file') }}" class="btn-main"
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/alejandroahu/inventario_ML/venv/lib/python3.11/site-packages/flask/app.py", line 1121, in url_for
+    return self.handle_url_build_error(error, endpoint, values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/alejandroahu/inventario_ML/venv/lib/python3.11/site-packages/flask/app.py", line 1110, in url_for
+    rv = url_adapter.build(  # type: ignore[union-attr]
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/alejandroahu/inventario_ML/venv/lib/python3.11/site-packages/werkzeug/routing/map.py", line 924, in build
+    raise BuildError(endpoint, values, method, self)
+werkzeug.routing.exceptions.BuildError: Could not build url for endpoint 'exportar_json_file'. Did you mean 'exportar_sync' instead?
+[2026-02-19 17:26:39,856] ERROR in app: Exception on /sincronizar [GET]
+Traceback (most recent call last):
+  File "/home/alejandroahu/inventario_ML/venv/lib/python3.11/site-packages/flask/app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/alejandroahu/inventario_ML/venv/lib/python3.11/site-packages/flask/app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/alejandroahu/inventario_ML/venv/lib/python3.11/site-packages/flask/app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/alejandroahu/inventario_ML/venv/lib/python3.11/site-packages/flask/app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/alejandroahu/inventario_ML/app.py", line 260, in decorated_function
+    return f(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^
+  File "/home/alejandroahu/inventario_ML/app.py", line 1078, in sincronizar_ui
+  File "/home/alejandroahu/inventario_ML/venv/lib/python3.11/site-packages/flask/templating.py", line 150, in render_template
+    return _render(app, template, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/alejandroahu/inventario_ML/venv/lib/python3.11/site-packages/flask/templating.py", line 131, in _render
+    rv = template.render(context)
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/alejandroahu/inventario_ML/venv/lib/python3.11/site-packages/jinja2/environment.py", line 1295, in render
+    self.environment.handle_exception()
+  File "/home/alejandroahu/inventario_ML/venv/lib/python3.11/site-packages/jinja2/environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "/home/alejandroahu/inventario_ML/templates/sincronizar.html", line 1, in top-level template code
+    {% extends "base.html" %}
+  File "/home/alejandroahu/inventario_ML/templates/base.html", line 67, in top-level template code
+    {% block content %}{% endblock %}
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/alejandroahu/inventario_ML/templates/sincronizar.html", line 19, in block 'content'
+    <a href="{{ url_for('exportar_json_file') }}" class="btn-main"
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/alejandroahu/inventario_ML/venv/lib/python3.11/site-packages/flask/app.py", line 1121, in url_for
+    return self.handle_url_build_error(error, endpoint, values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/alejandroahu/inventario_ML/venv/lib/python3.11/site-packages/flask/app.py", line 1110, in url_for
+    rv = url_adapter.build(  # type: ignore[union-attr]
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/alejandroahu/inventario_ML/venv/lib/python3.11/site-packages/werkzeug/routing/map.py", line 924, in build
+    raise BuildError(endpoint, values, method, self)
+werkzeug.routing.exceptions.BuildError: Could not build url for endpoint 'exportar_json_file'. Did you mean 'exportar_sync' instead?
+[2026-02-19 17:26:47,606] ERROR in app: Exception on /sincronizar [GET]
+Traceback (most recent call last):
+  File "/home/alejandroahu/inventario_ML/venv/lib/python3.11/site-packages/flask/app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/alejandroahu/inventario_ML/venv/lib/python3.11/site-packages/flask/app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/alejandroahu/inventario_ML/venv/lib/python3.11/site-packages/flask/app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/alejandroahu/inventario_ML/venv/lib/python3.11/site-packages/flask/app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/alejandroahu/inventario_ML/app.py", line 260, in decorated_function
+    return f(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^
+  File "/home/alejandroahu/inventario_ML/app.py", line 1078, in sincronizar_ui
+  File "/home/alejandroahu/inventario_ML/venv/lib/python3.11/site-packages/flask/templating.py", line 150, in render_template
+    return _render(app, template, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/alejandroahu/inventario_ML/venv/lib/python3.11/site-packages/flask/templating.py", line 131, in _render
+    rv = template.render(context)
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/alejandroahu/inventario_ML/venv/lib/python3.11/site-packages/jinja2/environment.py", line 1295, in render
+    self.environment.handle_exception()
+  File "/home/alejandroahu/inventario_ML/venv/lib/python3.11/site-packages/jinja2/environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "/home/alejandroahu/inventario_ML/templates/sincronizar.html", line 1, in top-level template code
+    {% extends "base.html" %}
+  File "/home/alejandroahu/inventario_ML/templates/base.html", line 67, in top-level template code
+    {% block content %}{% endblock %}
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/alejandroahu/inventario_ML/templates/sincronizar.html", line 19, in block 'content'
+    <a href="{{ url_for('exportar_json_file') }}" class="btn-main"
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/alejandroahu/inventario_ML/venv/lib/python3.11/site-packages/flask/app.py", line 1121, in url_for
+    return self.handle_url_build_error(error, endpoint, values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/alejandroahu/inventario_ML/venv/lib/python3.11/site-packages/flask/app.py", line 1110, in url_for
+    rv = url_adapter.build(  # type: ignore[union-attr]
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/alejandroahu/inventario_ML/venv/lib/python3.11/site-packages/werkzeug/routing/map.py", line 924, in build
+    raise BuildError(endpoint, values, method, self)
+werkzeug.routing.exceptions.BuildError: Could not build url for endpoint 'exportar_json_file'. Did you mean 'exportar_sync' instead?
+[2026-02-19 17:35:59 -0300] [12943] [INFO] Handling signal: hup
+[2026-02-19 17:35:59 -0300] [12943] [INFO] Hang up: Master
+[2026-02-19 17:35:59 -0300] [17359] [INFO] Booting worker with pid: 17359
+[2026-02-19 17:35:59 -0300] [17360] [INFO] Booting worker with pid: 17360
+[2026-02-19 17:35:59 -0300] [13433] [INFO] Worker exiting (pid: 13433)
+[2026-02-19 17:35:59 -0300] [17361] [INFO] Booting worker with pid: 17361
+[2026-02-19 17:35:59 -0300] [13434] [INFO] Worker exiting (pid: 13434)
+[2026-02-19 17:35:59 -0300] [13435] [INFO] Worker exiting (pid: 13435)
+[2026-02-19 17:35:59 -0300] [12943] [ERROR] Worker (pid:13435) was sent SIGTERM!
+[2026-02-19 17:35:59 -0300] [12943] [ERROR] Worker (pid:13434) was sent SIGTERM!

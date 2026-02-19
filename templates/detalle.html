@@ -184,7 +184,8 @@
                 {% for h in e.movimientos|reverse %}
                 {% if loop.index <= 5 %} <div
                     style="padding: 10px; background: rgba(255,255,255,0.02); border-radius: 8px; display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem;">
-                    <span style="color: var(--text-dim);">{{ h.fecha.strftime('%d/%m/%y') }}</span>
+                    <span style="color: var(--text-dim);">{{ h.fecha.strftime('%d/%m/%y') if h.fecha.strftime else
+                        h.fecha }}</span>
                     <b
                         style="color:{{ 'var(--orange)' if h.tipo == 'SALIDA' else 'var(--green)' }}; letter-spacing: 0.5px;">{{
                         h.tipo }}</b>

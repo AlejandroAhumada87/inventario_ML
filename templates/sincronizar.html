@@ -6,24 +6,41 @@
 
 <div class="table-container" style="max-width: 600px; margin: 0 auto; padding: 30px;">
 
-    <!-- SERVER MODE -->
+    <!-- FILE MODE (RECOMENDADO) -->
     <div style="margin-bottom: 30px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 20px;">
-        <h3 style="color:var(--orange);">MODO SERVIDOR (Chromebook)</h3>
+        <h3 style="color:var(--orange);">📂 SINCRO POR ARCHIVO (RECOMENDADO)</h3>
         <p style="color:var(--text-dim); margin-bottom: 15px;">
-            Si este es el servidor principal, los backups se generan automáticamente al recibir datos.
-            También puedes forzar un respaldo manual aquí.
+            Ideal para terreno. Exporta tus datos a un archivo, llévalo en tu teléfono y súbelo cuando vuelvas a la
+            oficina.
         </p>
-        <button id="btnBackup" class="btn-main" onclick="triggerBackup()">
-            RESPALDAR EN GITHUB AHORA
-        </button>
-        <p id="backupStatus" style="margin-top:10px; font-size: 0.9rem;"></p>
+
+        <div style="display: flex; flex-direction: column; gap: 15px;">
+            <!-- Exportar -->
+            <a href="{{ url_for('exportar_json_file') }}" class="btn-main"
+                style="text-align: center; text-decoration: none; background: var(--orange); color: black; display: block;">
+                📤 EXPORTAR DATOS A ARCHIVO (.JSON)
+            </a>
+
+            <!-- Importar -->
+            <form action="{{ url_for('importar_json_file') }}" method="POST" enctype="multipart/form-data"
+                style="background: rgba(255,102,0,0.05); padding: 15px; border-radius: 8px; border: 1px dashed var(--orange);">
+                <label style="display:block; margin-bottom: 10px; font-weight: bold; font-size: 0.9rem;">IMPORTAR DESDE
+                    ARCHIVO:</label>
+                <input type="file" name="archivo_json" accept=".json" required
+                    style="width: 100%; margin-bottom: 15px; color: var(--text-dim);">
+                <button type="submit" class="btn-outline"
+                    style="width: 100%; border-color: var(--orange); color: var(--orange);">
+                    📥 SUBIR Y FUSIONAR DATOS
+                </button>
+            </form>
+        </div>
     </div>
 
-    <!-- CLIENT MODE -->
-    <div>
-        <h3 style="color:var(--green);">MODO CLIENTE / SINCRONIZACIÓN</h3>
+    <!-- SERVER MODE -->
+    <div style="margin-bottom: 30px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 20px;">
+        <h3 style="color:var(--text-dim);">🖥️ RED LOCAL (DIRECCIÓN IP)</h3>
         <p style="color:var(--text-dim); margin-bottom: 15px;">
-            Intercambiar datos con otro dispositivo.
+            Solo funciona si ambos dispositivos están en el mismo WiFi.
         </p>
 
         <div class="form-group" style="margin-bottom: 15px;">
@@ -33,15 +50,29 @@
         </div>
 
         <div style="display: flex; gap: 10px; flex-direction: column;">
-            <button class="btn-main" onclick="enviarDatos()" style="background: var(--orange); color: black;">
-                ⬆️ ENVIAR DATOS (PUSH)
+            <button class="btn-outline" onclick="enviarDatos()"
+                style="border-color: var(--text-dim); color: var(--text-dim);">
+                ⬆️ ENVIAR A IP (PUSH)
             </button>
             <button class="btn-outline" onclick="recibirDatos()"
-                style="border-color: var(--green); color: var(--green);">
-                ⬇️ RECIBIR DATOS (PULL)
+                style="border-color: var(--text-dim); color: var(--text-dim);">
+                ⬇️ TRAER DE IP (PULL)
             </button>
         </div>
-        <p id="syncStatus" style="margin-top:10px; font-size: 0.9rem; white-space: pre-wrap;"></p>
+        <p id="syncStatus" style="margin-top:10px; font-size: 0.8rem; color: var(--text-dim); white-space: pre-wrap;">
+        </p>
+    </div>
+
+    <!-- MODO SERVIDOR -->
+    <div>
+        <h3 style="color:var(--green);">🛠️ MODO SERVIDOR (GITHUB)</h3>
+        <p style="color:var(--text-dim); margin-bottom: 15px;">
+            Los respaldos en la nube se generan automáticamente al recibir datos.
+        </p>
+        <button id="btnBackup" class="btn-outline" onclick="triggerBackup()"
+            style="border-color: var(--green); color: var(--green); width: 100%;">
+            RESPALDAR EN GITHUB AHORA
+        </button>
     </div>
 
 </div>
